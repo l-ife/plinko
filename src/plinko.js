@@ -217,11 +217,11 @@ const sketch = (p) => {
             }
             let ballAge;
             if (label === 'ball') {
-                if (bodies.length > 1000 && p.random(1) > 0.90) {
+                ballAge = (now - n.birthdate);
+                if (bodies.length > 1000 && (p.random(0.5) + ((15000/ballAge) - 1.5)) > 0.90) {
                     removeBody(n);
                     return;
                 }
-                ballAge = (now - n.birthdate);
                 const scalar = (ballAge > 11000) ? 0.4 : 1;
                 p.fill([
                     fillStyle[0],

@@ -1,0 +1,20 @@
+# data and output
+/data
+/lib
+
+# packages
+/node_modules
+/bower_components
+
+# misc
+yarn-error.log
+npm-debug.log
+testem.log
+.DS_Store
+coverage.lcov
+
+# Emacs
+*~
+\#*\#
+.\#*
+

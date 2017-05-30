@@ -1,0 +1,27 @@
+{
+  "name": "matterjs",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "dev": "node rollup.build.js"
+  },
+  "dependencies": {
+    "color": "^1.0.3",
+    "lodash": "^4.17.4",
+    "matter-collision-events": "^0.1.7",
+    "matter-js": "^0.12.0",
+    "p5": "^0.5.10"
+  },
+  "devDependencies": {
+    "babel-plugin-external-helpers": "^6.22.0",
+    "babel-preset-latest": "^6.24.1",
+    "rollup": "^0.41.6",
+    "rollup-plugin-babel": "^2.7.1",
+    "rollup-plugin-commonjs": "^8.0.2",
+    "rollup-plugin-livereload": "^0.4.0",
+    "rollup-plugin-node-resolve": "^3.0.0",
+    "rollup-plugin-serve": "^0.3.0",
+    "rollup-watch": "^3.2.2"
+  }
+}

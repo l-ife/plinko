@@ -1,4 +1,4 @@
-const p5 = require('p5');
+import p5 from 'p5';
 let pegSize = 14;
 let ballRadius = 6;
 
@@ -45,8 +45,7 @@ function periodicBackup() {
 }
 timeout = setTimeout(periodicBackup, minutesTillNextBackup * 60 * 1000);
 
-const Matter = require('matter-js/build/matter');
-// Matter.use('matter-collision-events');
+import Matter from 'matter-js/build/matter';
 const { Bodies, Body, Composite, Engine, Events, Render, World } = Matter;
 
 // add plinko sensors

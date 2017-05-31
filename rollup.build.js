@@ -11,23 +11,25 @@ const defaults = {
   format: 'iife',
   sourceMap: true,
   plugins: [
+    commonjs(),
     babel({
       exclude: 'node_modules/**',
       exclude: 'data/**'
     }),
-    commonjs(),
-    resolve(),
+    resolve({
+      browser: true
+    }),
     serve('lib'),
     livereload()
   ]
 };
 
 const configs = [
-  Object.assign({}, defaults, {
-    entry: 'src/index.js',
-    dest: 'lib/index.js',
-    moduleName: 'Index'
-  }),
+  // Object.assign({}, defaults, {
+  //   entry: 'src/index.js',
+  //   dest: 'lib/index.js',
+  //   moduleName: 'Index'
+  // }),
   Object.assign({}, defaults, {
     entry: 'src/plinko.js',
     dest: 'lib/plinko.js',

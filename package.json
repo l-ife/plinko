@@ -7,7 +7,6 @@
     "dev": "node rollup.build.js"
   },
   "dependencies": {
-    "color": "^1.0.3",
     "lodash": "^4.17.4",
     "matter-collision-events": "^0.1.7",
     "matter-js": "^0.12.0",

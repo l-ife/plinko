@@ -1,5 +1,4 @@
 const p5 = require('p5');
-const color = require('color');
 let pegSize = 14;
 let ballRadius = 6;
 

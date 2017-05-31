@@ -8,6 +8,16 @@ let plinkoHeight = 900;
 let countX = 10;
 let countY = 20;
 
+const uuid = (length) => {
+    let theReturn = [];
+    for (var i = 0; i < length; i++) {
+        theReturn.push(String.fromCharCode(parseInt(Math.random() * (127 - 33) + 33)));
+    }
+    return theReturn.join('');
+}
+
+const sessionId = uuid(16);
+
 window.theWinners = [];
 
 window.winnersCsv = () => {
@@ -20,12 +30,21 @@ window.saveToDisk = (filename) => {
     let blob = new Blob([data], {type: 'text/json'}),
         e    = document.createEvent('MouseEvents'),
         a    = document.createElement('a')
-    a.download = filename;
+    a.download = filename || `${sessionId}.csv`;
     a.href = window.URL.createObjectURL(blob);
     a.dataset.downloadurl =  ['text/csv', a.download, a.href].join(':');
     e.initMouseEvent('click', true, false, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
     a.dispatchEvent(e);
 }
+
+let minutesTillNextBackup = 1;
+let timeout;
+function periodicBackup() {
+    window.saveToDisk(`${sessionId}.csv`);
+    minutesTillNextBackup = Math.min(minutesTillNextBackup * 2, 30);
+    timeout = setTimeout(periodicBackup, minutesTillNextBackup * 60 * 1000);
+}
+timeout = setTimeout(periodicBackup, minutesTillNextBackup * 60 * 1000);
 
 const Matter = require('matter-js/build/matter');
 // Matter.use('matter-collision-events');
@@ -44,15 +63,6 @@ const { Bodies, Body, Composite, Engine, Events, Render, World } = Matter;
 //  ]
 
 const sketch = (p) => {
-
-    const uuid = (length) => {
-        let theReturn = [];
-        for (var i = 0; i < length; i++) {
-            theReturn.push(String.fromCharCode(parseInt(p.random(33, 127))));
-        }
-        return theReturn.join('');
-    }
-
     let canvas;
     let engine;
 

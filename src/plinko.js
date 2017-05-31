@@ -11,8 +11,20 @@ let countY = 20;
 window.theWinners = [];
 
 window.winnersCsv = () => {
-    return `ballRadius,position,hue,mutationRate,restitution,generation,birthdate,age
+    return `ballRadius,position,hue,mutationRate,restitution,generation,birthdate,age,ancestry
     ${window.theWinners.map(winners => winners.join(',')).join('\n')}`;
+}
+
+window.saveToDisk = (filename) => {
+    let data = window.winnersCsv();
+    let blob = new Blob([data], {type: 'text/json'}),
+        e    = document.createEvent('MouseEvents'),
+        a    = document.createElement('a')
+    a.download = filename;
+    a.href = window.URL.createObjectURL(blob);
+    a.dataset.downloadurl =  ['text/csv', a.download, a.href].join(':');
+    e.initMouseEvent('click', true, false, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
+    a.dispatchEvent(e);
 }
 
 const Matter = require('matter-js/build/matter');
@@ -31,11 +43,15 @@ const { Bodies, Body, Composite, Engine, Events, Render, World } = Matter;
 //      roundTo(notch)
 //  ]
 
-const resizeCanvas = function () {
-    p.resizeCanvas(p.windowWidth, p.windowHeight);
-}
-
 const sketch = (p) => {
+
+    const uuid = (length) => {
+        let theReturn = [];
+        for (var i = 0; i < length; i++) {
+            theReturn.push(String.fromCharCode(parseInt(p.random(33, 127))));
+        }
+        return theReturn.join('');
+    }
 
     let canvas;
     let engine;
@@ -118,11 +134,12 @@ const sketch = (p) => {
     function spawnBall(parent = { genome: {} }) {
         const ballAge = (parent.birthdate && (window.getTime() - parent.birthdate)) || 0;
         if (parent.genome.hue) {
-            const { ballRadius, position, hue, mutationRate, restitution, generation } = parent.genome;
+            const { ballRadius, position, hue, mutationRate, restitution, generation, ancestry } = parent.genome;
             window.theWinners.push([
-                ballRadius, position, hue, mutationRate, restitution, generation, parent.birthdate - window.beginTime, ballAge
+                ballRadius, position, hue, mutationRate, restitution, generation, parent.birthdate - window.beginTime, ballAge, ancestry
             ]);
         }
+        const ancestry = parent.genome.ancestry || uuid(4);
         const mutationRate = mutate({
             parentValue: parent.genome.mutationRate,
             bounds: bounds(0, 1),
@@ -130,6 +147,9 @@ const sketch = (p) => {
             rate: 1,
             defaultVal: 1
         });
+        // TODO: position max
+        // TODO: position min
+        // TODO: make these objects an array and loop over and pass in parent.genome
         const thePosition = mutate({
             parentValue: parent.genome.position,
             bounds: bounds(-0.1, 1.1),
@@ -256,8 +276,6 @@ const sketch = (p) => {
             }
         });
     }
-
-    p.windowResized = resizeCanvas;
 };
 
 const theSketch = new p5(sketch, 'body');

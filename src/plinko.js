@@ -7,6 +7,8 @@ let plinkoHeight = 900;
 let countX = 10;
 let countY = 20;
 
+const oldAge = 75000;
+
 const uuid = (length) => {
     let theReturn = [];
     for (var i = 0; i < length; i++) {
@@ -19,13 +21,19 @@ const sessionId = uuid(16);
 
 window.theWinners = [];
 
-window.winnersCsv = () => {
+window.engine;
+
+window.lifeStudy = () => {
     return `ballRadius,position,hue,mutationRate,restitution,generation,birthdate,age,ancestry
-    ${window.theWinners.map(winners => winners.join(',')).join('\n')}`;
+    ${window.theWinners.map(winners => winners.join(',')).join('\n')}
+    ${Composite.allBodies(engine.world).filter(body => body.genome !== undefined).map({ genome:
+        { ballRadius, position, hue, mutationRate, restitution, generation, birthdate, ancestry } } =>
+        [ ballRadius, position, hue, mutationRate, restitution, generation, (birthdate - window.beginTime), (window.getTime() - birthdate), ancestry ].join(','))
+            .join('\n')}`;
 }
 
 window.saveToDisk = (filename) => {
-    let data = window.winnersCsv();
+    let data = window.lifeStudy();
     let blob = new Blob([data], {type: 'text/json'}),
         e    = document.createEvent('MouseEvents'),
         a    = document.createElement('a')
@@ -62,13 +70,12 @@ const { Bodies, Body, Composite, Engine, Events, Render, World } = Matter;
 
 const sketch = (p) => {
     let canvas;
-    let engine;
 
     p.setup = () => {
         p.colorMode(p.HSB, 255);
 
         console.log('setting up');
-        engine = Engine.create();
+        window.engine = Engine.create();
         window.getTime = () => engine.timing.timestamp;
         window.beginTime = window.getTime();
         Engine.run(engine);
@@ -246,30 +253,32 @@ const sketch = (p) => {
             let ballAge;
             if (label === 'ball') {
                 ballAge = (now - n.birthdate);
-                if (bodies.length > 1000 && (p.random(0.5) + ((15000/ballAge) - 1.5)) > 0.90) {
+                function ballAgeSurvivalFactor() {
+                    const ageFactor = (ballAge/oldAge);
+                    return (p.random(0.5) + (ageFactor - 1.5));
+                }
+                if (bodies.length > 1000 && ballAgeSurvivalFactor() > 0.90) {
                     removeBody(n);
                     return;
                 }
-                const scalar = (ballAge > 11000) ? 0.4 : 1;
-                p.fill([
-                    fillStyle[0],
-                    255 * scalar,
-                    255 * scalar
-                ]);
-                // p.strokeWeight(lineWidth);
 
-                if(y > p.height * 2) {
+                if (y > p.height * 1.3) {
                     removeBody(n);
                     spawnBall(n);
-                    if (p.random(1)+(100/ballAge) > 0.50) {
+                    const fallSplitFactor = ballAgeSurvivalFactor();
+                    if (fallSplitFactor > 0.99) {
                         spawnBall(n);
                     }
-                    if (ballAge > 11000 && (ballAge % 100 === 0)) {
-                        if (p.random(1)+(1000/ballAge) > 0.75) {
-                            spawnBall(n);
-                        }
-                    }
+                } else if (ballAge > oldAge && p.random(1) > 0.99995 && ballAgeSurvivalFactor() > 0.85) {
+                    spawnBall(n);
                 } else {
+                    const darkerIfOld = (ballAge > oldAge) ? 0.4 : 1;
+                    p.fill([
+                        fillStyle[0],
+                        255 * darkerIfOld,
+                        255 * darkerIfOld
+                    ]);
+
                     p.ellipse(x, y, circleRadius * 2);
                 }
             } else if (label === 'sensor') {

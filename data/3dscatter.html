@@ -56,21 +56,16 @@
         return mesh;
     }
 
-    // from http://stackoverflow.com/questions/5623838/rgb-to-hex-and-hex-to-rgb
-
-    function hexToRgb(hex) { //TODO rewrite with vector output
-        var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-        return result ? {
-            r: parseInt(result[1], 16),
-            g: parseInt(result[2], 16),
-            b: parseInt(result[3], 16)
-        } : null;
-    }
-
     function sq(x) {
         var s = Math.pow(x, 2);
         return s;
     }
+
+    const xKey = 'birthdate';
+    const yKey = 'ballRadius';
+    const zKey = 'position';
+
+    // TODO: Make lines from birthdate to deathdate
 
     function getPts(x) {
         //console.log(x)
@@ -82,9 +77,9 @@
             const { ballRadius, position, hue, mutationRate, restitution, generation, birthdate, age, ancestry } = d;
 
             unfiltered[i] = {
-                x: +ballRadius,
-                y: +age,
-                z: +position
+                x: +d[xKey],
+                y: +d[yKey],
+                z: +d[zKey]
             };
             colors[i] = d3.hsl((+hue/255)*360, 1, 0.5, 1).toString();
         })
@@ -125,13 +120,12 @@
     var format = d3.format("+.3f");
 
     function scatter(data) {
-        var temp = data.unfiltered;
-        const xExent = d3.extent(temp, function(d) {
+        const xExent = d3.extent(data.unfiltered, function(d) {
             return d.x;
         });
-        const yExent = [d3.min(data.unfiltered, function(d) {
+        const yExent = d3.extent(data.unfiltered, function(d) {
             return d.y;
-        }), 120000];
+        });
         const zExent = d3.extent(data.unfiltered, function(d) {
             return d.z;
         });
@@ -205,7 +199,7 @@
         line.type = THREE.Lines;
         scatterPlot.add(line);
 
-        var titleX = createText2D('-ballRadius');
+        var titleX = createText2D(`-${xKey}`);
         titleX.position.x = xScale(vpts.xMin) - 12,
         titleX.position.y = 5;
         scatterPlot.add(titleX);
@@ -215,7 +209,7 @@
         valueX.position.y = -5;
         scatterPlot.add(valueX);
 
-        var titleX = createText2D('ballRadius');
+        var titleX = createText2D(xKey);
         titleX.position.x = xScale(vpts.xMax) + 12;
         titleX.position.y = 5;
         scatterPlot.add(titleX);
@@ -225,7 +219,7 @@
         valueX.position.y = -5;
         scatterPlot.add(valueX);
 
-        var titleY = createText2D('-age');
+        var titleY = createText2D(`-${yKey}`);
         titleY.position.y = yScale(vpts.yMin) - 5;
         scatterPlot.add(titleY);
 
@@ -233,7 +227,7 @@
         valueY.position.y = yScale(vpts.yMin) - 15,
         scatterPlot.add(valueY);
 
-        var titleY = createText2D('age');
+        var titleY = createText2D(yKey);
         titleY.position.y = yScale(vpts.yMax) + 15;
         scatterPlot.add(titleY);
 
@@ -241,11 +235,11 @@
         valueY.position.y = yScale(vpts.yMax) + 5,
         scatterPlot.add(valueY);
 
-        var titleZ = createText2D('-position ' + format(zExent[0]));
+        var titleZ = createText2D(`-${zKey} ${format(zExent[0])}`);
         titleZ.position.z = zScale(vpts.zMin) + 2;
         scatterPlot.add(titleZ);
 
-        var titleZ = createText2D('position ' + format(zExent[1]));
+        var titleZ = createText2D(`${zKey} ${format(zExent[1])}`);
         titleZ.position.z = zScale(vpts.zMax) + 2;
         scatterPlot.add(titleZ);
 
@@ -317,7 +311,7 @@
         };
     }
 
-    d3.csv("./x^.a`j)IGEh-bL-x.csv", function(data) {
+    d3.csv("./f-NCl!vY[qb[mCAG.csv", function(data) {
         points = getPts(data);
         scatter(points);
     });

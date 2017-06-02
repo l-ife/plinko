@@ -105,12 +105,12 @@
         }
 
         function renderChart() {
-            d3.csv("./thebigone.csv", function(data) {
+            d3.csv("./f-NCl!vY[qb[mCAG.csv", function(data) {
                 console.log('data');
                 const makeADomain = (data, key) => d3.extent(data, d => +d[key]);
                 const domains = {
                     birthdate: makeADomain(data, 'birthdate'),
-                    age: [makeADomain(data, 'age')[0], makeADomain(data, 'age')[1]-25000000],
+                    age: makeADomain(data, 'age'),
                     position: makeADomain(data, 'position'),
                     ballRadius: makeADomain(data, 'ballRadius'),
                     mutationRate: makeADomain(data, 'mutationRate'),
@@ -127,7 +127,6 @@
                 makeACanvas(data, 'birthdate', 'restitution', domains);
 
                 makeACanvas(data, 'generation', 'age', domains);
-                makeACanvas(data, 'generation', 'position', domains);
                 makeACanvas(data, 'generation', 'ballRadius', domains);
                 makeACanvas(data, 'generation', 'hue', domains);
                 makeACanvas(data, 'generation', 'mutationRate', domains);
@@ -141,11 +140,14 @@
                 makeACanvas(data, 'position', 'restitution', domains); // TODO Add width argument
 
                 makeACanvas(data, 'age', 'generation', domains); // TODO Add width argument
-                makeACanvas(data, 'age', 'position', domains); // TODO Add width argument
                 makeACanvas(data, 'age', 'ballRadius', domains); // TODO Add width argument
-                makeACanvas(data, 'age', 'hue', domains); // TODO Add width argument
                 makeACanvas(data, 'age', 'mutationRate', domains); // TODO Add width argument
                 makeACanvas(data, 'age', 'restitution', domains); // TODO Add width argument
+
+                makeACanvas(data, 'hue', 'age', domains); // TODO Add width argument
+                makeACanvas(data, 'hue', 'ballRadius', domains); // TODO Add width argument
+                makeACanvas(data, 'hue', 'mutationRate', domains); // TODO Add width argument
+                makeACanvas(data, 'hue', 'restitution', domains); // TODO Add width argument
             });
         }
         renderChart();

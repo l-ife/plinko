@@ -7,22 +7,29 @@
         margin: 0px;
         padding: 0px;
     }
-    #container {
-        width:960px;
-        height:500px;
-    }
     </style>
-
 </head>
 <div id="wrapper">
-    <div id="container"></div>
+    <div id="birthdate-ballRadius-position"></div>
+    <div id="birthdate-age-position"></div>
+    <div id="birthdate-ballRadius-mutationRate"></div>
 </div>
 
 <body>
-
-    <!--div id="container"></div-->
     <script>
-    // <!--
+
+    // TODO: Make lines from birthdate to deathdate
+
+    var format = d3.format("+.3f");
+
+    function sq(x) {
+        var s = Math.pow(x, 2);
+        return s;
+    }
+
+    function v(x, y, z) {
+        return new THREE.Vector3(x, y, z);
+    }
 
     function createTextCanvas(text, color, font, size) {
         size = size || 16;
@@ -56,229 +63,199 @@
         return mesh;
     }
 
-    function sq(x) {
-        var s = Math.pow(x, 2);
-        return s;
-    }
+    function scatter(points, extents, [w, h], keys) {
 
-    const xKey = 'birthdate';
-    const yKey = 'ballRadius';
-    const zKey = 'position';
-
-    // TODO: Make lines from birthdate to deathdate
-
-    function getPts(x) {
-        //console.log(x)
-        var unfiltered = [],
-            colors = [];
-
-        x.forEach(function(d, i) {
-
-            const { ballRadius, position, hue, mutationRate, restitution, generation, birthdate, age, ancestry } = d;
-
-            unfiltered[i] = {
-                x: +d[xKey],
-                y: +d[yKey],
-                z: +d[zKey]
-            };
-            colors[i] = d3.hsl((+hue/255)*360, 1, 0.5, 1).toString();
-        })
-        var xyzData = {
-            unfiltered: unfiltered,
-            colors: colors
-        }
-        return xyzData;
-    }
-
-    var renderer = new THREE.WebGLRenderer({
-        antialias: true
-    });
-    var w = 960;
-    var h = 500;
-
-    renderer.setSize(w, h);
-    document.getElementById("container").appendChild(renderer.domElement);
-
-    renderer.setClearColorHex(0xEEEEEE, 1.0);
-
-    var camera = new THREE.PerspectiveCamera(45, w / h, 1, 10000);
-    camera.position.z = 200;
-    camera.position.x = -100;
-    camera.position.y = 100;
-
-    var scene = new THREE.Scene();
-
-    var scatterPlot = new THREE.Object3D();
-    scene.add(scatterPlot);
-
-    scatterPlot.rotation.y = 0;
-
-    function v(x, y, z) {
-        return new THREE.Vector3(x, y, z);
-    }
-
-    var format = d3.format("+.3f");
-
-    function scatter(data) {
-        const xExent = d3.extent(data.unfiltered, function(d) {
-            return d.x;
+        var renderer = new THREE.WebGLRenderer({
+            antialias: true
         });
-        const yExent = d3.extent(data.unfiltered, function(d) {
-            return d.y;
-        });
-        const zExent = d3.extent(data.unfiltered, function(d) {
-            return d.z;
-        });
+        renderer.setSize(w, h);
+        const domNode = d3.select('body').append('div')[0][0];
+        domNode.appendChild(renderer.domElement);
 
-        var vpts = {
-            xMax: xExent[1],
-            xCen: (xExent[1] + xExent[0]) / 2,
-            xMin: xExent[0],
-            yMax: yExent[1],
-            yCen: (yExent[1] + yExent[0]) / 2,
-            yMin: yExent[0],
-            zMax: zExent[1],
-            zCen: (zExent[1] + zExent[0]) / 2,
-            zMin: zExent[0]
-        }
+        renderer.setClearColorHex(0xEEEEEE, 1.0);
+
+        var camera = new THREE.PerspectiveCamera(45, w / h, 1, 10000);
+        camera.position.z = 300;
+        camera.position.x = 0;
+        camera.position.y = 100;
+
+        var scene = new THREE.Scene();
+
+        var scatterPlot = new THREE.Object3D();
+        scene.add(scatterPlot);
+
+        scatterPlot.rotation.y = 0;
+
+        const xyzExtents = {
+            x: extents[keys.x],
+            y: extents[keys.y],
+            z: extents[keys.z]
+        };
+
+        var vs = {
+            x: {
+                max: xyzExtents.x[1],
+                cen: (xyzExtents.x[1] + xyzExtents.x[0]) / 2,
+                min: xyzExtents.x[0]
+            },
+            y: {
+                max: xyzExtents.y[1],
+                cen: (xyzExtents.y[1] + xyzExtents.y[0]) / 2,
+                min: xyzExtents.y[0]
+            },
+            z: {
+                max: xyzExtents.z[1],
+                cen: (xyzExtents.z[1] + xyzExtents.z[0]) / 2,
+                min: xyzExtents.z[0]
+            }
+        };
 
         var colour = d3.scale.category20c();
 
         var xScale = d3.scale.linear()
-            .domain(xExent)
-            .range([-50, 50]);
+            .domain(xyzExtents.x)
+            .range([-150, 150]);
         var yScale = d3.scale.linear()
-            .domain(yExent)
+            .domain(xyzExtents.y)
             .range([-50, 50]);
         var zScale = d3.scale.linear()
-            .domain(zExent)
+            .domain(xyzExtents.z)
             .range([-50, 50]);
 
+        const sv = (xType, yType, zType) => v(xScale(vs.x[xType]), yScale(vs.y[yType]), zScale(vs.z[zType]));
+
         var lineGeo = new THREE.Geometry();
-        lineGeo.vertices.push(
-            v(xScale(vpts.xMin), yScale(vpts.yCen), zScale(vpts.zCen)), v(xScale(vpts.xMax), yScale(vpts.yCen), zScale(vpts.zCen)),
-            v(xScale(vpts.xCen), yScale(vpts.yMin), zScale(vpts.zCen)), v(xScale(vpts.xCen), yScale(vpts.yMax), zScale(vpts.zCen)),
-            v(xScale(vpts.xCen), yScale(vpts.yCen), zScale(vpts.zMax)), v(xScale(vpts.xCen), yScale(vpts.yCen), zScale(vpts.zMin)),
 
-            v(xScale(vpts.xMin), yScale(vpts.yMax), zScale(vpts.zMin)), v(xScale(vpts.xMax), yScale(vpts.yMax), zScale(vpts.zMin)),
-            v(xScale(vpts.xMin), yScale(vpts.yMin), zScale(vpts.zMin)), v(xScale(vpts.xMax), yScale(vpts.yMin), zScale(vpts.zMin)),
-            v(xScale(vpts.xMin), yScale(vpts.yMax), zScale(vpts.zMax)), v(xScale(vpts.xMax), yScale(vpts.yMax), zScale(vpts.zMax)),
-            v(xScale(vpts.xMin), yScale(vpts.yMin), zScale(vpts.zMax)), v(xScale(vpts.xMax), yScale(vpts.yMin), zScale(vpts.zMax)),
+        const types = ['min', 'cen', 'max'];
+        types.forEach(zType => {
+            types.forEach(yType => {
+                lineGeo.vertices.push(sv('min', yType, zType), sv('max', yType, zType));
+            });
+        });
+        types.forEach(yType => {
+            types.forEach(xType => {
+                lineGeo.vertices.push(sv(xType, yType, 'min'), sv(xType, yType, 'max'));
+            });
+        });
+        types.forEach(zType => {
+            types.forEach(xType => {
+                lineGeo.vertices.push(sv(xType, 'min', zType), sv(xType, 'max', zType));
+            });
+        });
 
-            v(xScale(vpts.xMin), yScale(vpts.yCen), zScale(vpts.zMax)), v(xScale(vpts.xMax), yScale(vpts.yCen), zScale(vpts.zMax)),
-            v(xScale(vpts.xMin), yScale(vpts.yCen), zScale(vpts.zMin)), v(xScale(vpts.xMax), yScale(vpts.yCen), zScale(vpts.zMin)),
-            v(xScale(vpts.xMin), yScale(vpts.yMax), zScale(vpts.zCen)), v(xScale(vpts.xMax), yScale(vpts.yMax), zScale(vpts.zCen)),
-            v(xScale(vpts.xMin), yScale(vpts.yMin), zScale(vpts.zCen)), v(xScale(vpts.xMax), yScale(vpts.yMin), zScale(vpts.zCen)),
-
-            v(xScale(vpts.xMax), yScale(vpts.yMin), zScale(vpts.zMin)), v(xScale(vpts.xMax), yScale(vpts.yMax), zScale(vpts.zMin)),
-            v(xScale(vpts.xMin), yScale(vpts.yMin), zScale(vpts.zMin)), v(xScale(vpts.xMin), yScale(vpts.yMax), zScale(vpts.zMin)),
-            v(xScale(vpts.xMax), yScale(vpts.yMin), zScale(vpts.zMax)), v(xScale(vpts.xMax), yScale(vpts.yMax), zScale(vpts.zMax)),
-            v(xScale(vpts.xMin), yScale(vpts.yMin), zScale(vpts.zMax)), v(xScale(vpts.xMin), yScale(vpts.yMax), zScale(vpts.zMax)),
-
-            v(xScale(vpts.xCen), yScale(vpts.yMin), zScale(vpts.zMax)), v(xScale(vpts.xCen), yScale(vpts.yMax), zScale(vpts.zMax)),
-            v(xScale(vpts.xCen), yScale(vpts.yMin), zScale(vpts.zMin)), v(xScale(vpts.xCen), yScale(vpts.yMax), zScale(vpts.zMin)),
-            v(xScale(vpts.xMax), yScale(vpts.yMin), zScale(vpts.zCen)), v(xScale(vpts.xMax), yScale(vpts.yMax), zScale(vpts.zCen)),
-            v(xScale(vpts.xMin), yScale(vpts.yMin), zScale(vpts.zCen)), v(xScale(vpts.xMin), yScale(vpts.yMax), zScale(vpts.zCen)),
-
-            v(xScale(vpts.xMax), yScale(vpts.yMax), zScale(vpts.zMin)), v(xScale(vpts.xMax), yScale(vpts.yMax), zScale(vpts.zMax)),
-            v(xScale(vpts.xMax), yScale(vpts.yMin), zScale(vpts.zMin)), v(xScale(vpts.xMax), yScale(vpts.yMin), zScale(vpts.zMax)),
-            v(xScale(vpts.xMin), yScale(vpts.yMax), zScale(vpts.zMin)), v(xScale(vpts.xMin), yScale(vpts.yMax), zScale(vpts.zMax)),
-            v(xScale(vpts.xMin), yScale(vpts.yMin), zScale(vpts.zMin)), v(xScale(vpts.xMin), yScale(vpts.yMin), zScale(vpts.zMax)),
-
-            v(xScale(vpts.xMin), yScale(vpts.yCen), zScale(vpts.zMin)), v(xScale(vpts.xMin), yScale(vpts.yCen), zScale(vpts.zMax)),
-            v(xScale(vpts.xMax), yScale(vpts.yCen), zScale(vpts.zMin)), v(xScale(vpts.xMax), yScale(vpts.yCen), zScale(vpts.zMax)),
-            v(xScale(vpts.xCen), yScale(vpts.yMax), zScale(vpts.zMin)), v(xScale(vpts.xCen), yScale(vpts.yMax), zScale(vpts.zMin)),
-            v(xScale(vpts.xCen), yScale(vpts.yMin), zScale(vpts.zMin)), v(xScale(vpts.xCen), yScale(vpts.yMin), zScale(vpts.zMax))
-
-        );
         var lineMat = new THREE.LineBasicMaterial({
             color: 0x000000,
             lineWidth: 1
         });
+
         var line = new THREE.Line(lineGeo, lineMat);
+
         line.type = THREE.Lines;
         scatterPlot.add(line);
 
-        var titleX = createText2D(`-${xKey}`);
-        titleX.position.x = xScale(vpts.xMin) - 12,
+        var titleX = createText2D(`-${keys.x}`);
+        titleX.position.x = xScale(vs.x.min) - 12,
         titleX.position.y = 5;
         scatterPlot.add(titleX);
 
-        var valueX = createText2D(format(xExent[0]));
-        valueX.position.x = xScale(vpts.xMin) - 12,
+        var valueX = createText2D(format(xyzExtents.x[0]));
+        valueX.position.x = xScale(vs.x.min) - 12,
         valueX.position.y = -5;
         scatterPlot.add(valueX);
 
-        var titleX = createText2D(xKey);
-        titleX.position.x = xScale(vpts.xMax) + 12;
+        var titleX = createText2D(keys.x);
+        titleX.position.x = xScale(vs.x.max) + 12;
         titleX.position.y = 5;
         scatterPlot.add(titleX);
 
-        var valueX = createText2D(format(xExent[1]));
-        valueX.position.x = xScale(vpts.xMax) + 12,
+        var valueX = createText2D(format(xyzExtents.x[1]));
+        valueX.position.x = xScale(vs.x.max) + 12,
         valueX.position.y = -5;
         scatterPlot.add(valueX);
 
-        var titleY = createText2D(`-${yKey}`);
-        titleY.position.y = yScale(vpts.yMin) - 5;
+        var titleY = createText2D(`-${keys.y}`);
+        titleY.position.y = yScale(vs.y.min) - 5;
         scatterPlot.add(titleY);
 
-        var valueY = createText2D(format(yExent[0]));
-        valueY.position.y = yScale(vpts.yMin) - 15,
+        var valueY = createText2D(format(xyzExtents.y[0]));
+        valueY.position.y = yScale(vs.y.min) - 15,
         scatterPlot.add(valueY);
 
-        var titleY = createText2D(yKey);
-        titleY.position.y = yScale(vpts.yMax) + 15;
+        var titleY = createText2D(keys.y);
+        titleY.position.y = yScale(vs.y.max) + 15;
         scatterPlot.add(titleY);
 
-        var valueY = createText2D(format(yExent[1]));
-        valueY.position.y = yScale(vpts.yMax) + 5,
+        var valueY = createText2D(format(xyzExtents.y[1]));
+        valueY.position.y = yScale(vs.y.max) + 5,
         scatterPlot.add(valueY);
 
-        var titleZ = createText2D(`-${zKey} ${format(zExent[0])}`);
-        titleZ.position.z = zScale(vpts.zMin) + 2;
+        var titleZ = createText2D(`-${keys.z} ${format(xyzExtents.z[0])}`);
+        titleZ.position.z = zScale(vs.z.min) + 2;
         scatterPlot.add(titleZ);
 
-        var titleZ = createText2D(`${zKey} ${format(zExent[1])}`);
-        titleZ.position.z = zScale(vpts.zMax) + 2;
+        var titleZ = createText2D(`${keys.z} ${format(xyzExtents.z[1])}`);
+        titleZ.position.z = zScale(vs.z.max) + 2;
         scatterPlot.add(titleZ);
 
         var mat = new THREE.ParticleBasicMaterial({
             vertexColors: true,
-            size: 1
+            size: 0.5
         });
 
-        var pointCount = data.unfiltered.length;
-        var pointGeo = new THREE.Geometry();
-        for (var i = 0; i < pointCount; i++) {
-            var x = xScale(data.unfiltered[i].x);
-            var y = yScale(data.unfiltered[i].y);
-            var z = zScale(data.unfiltered[i].z);
-
-            pointGeo.vertices.push(new THREE.Vector3(x, y, z));
-
-            pointGeo.colors.push(new THREE.Color(data.colors[i]));
-
+        let pointGeo = new THREE.Geometry();
+        for (var k = 0; k < points.length; k++) {
+            // const p = points[k];
+            // pointGeo.vertices.push(new THREE.Vector3(
+            //     xScale(+p[keys.x]), yScale(+p[keys.y]), zScale(+p[keys.z])
+            // ));
+            // pointGeo.colors.push(new THREE.Color(d3.hsl((+p.hue/255)*360, 1, 0.5, 1).toString()));
+            pointGeo.vertices.push(new THREE.Vector3());
+            pointGeo.colors.push(new THREE.Color());
         }
-        var points = new THREE.ParticleSystem(pointGeo, mat);
-        scatterPlot.add(points);
+        let particleSystem = new THREE.ParticleSystem(pointGeo, mat);
+
+        scatterPlot.add(particleSystem);
 
         renderer.render(scene, camera);
-        var paused = false;
-        var last = new Date().getTime();
-        var down = false;
-        var sx = 0,
-            sy = 0;
 
-        window.onmousedown = function(ev) {
+        function animate() {
+            renderer.clear();
+            camera.lookAt(scene.position);
+            renderer.render(scene, camera);
+            window.requestAnimationFrame(animate, renderer.domElement);
+        };
+        animate();
+
+        let i = 0;
+        function doABatch() {
+            for (var j = 0; j < 150000 && i < points.length; j++ && i++) {
+                const p = points[i];
+                particleSystem.geometry.vertices[i] = new THREE.Vector3(
+                    xScale(+p[keys.x]), yScale(+p[keys.y]), zScale(+p[keys.z])
+                );
+                particleSystem.geometry.colors[i] = new THREE.Color(d3.hsl((+p.hue/255)*360, 1, 0.5, 1).toString());
+            }
+            if (i < points.length) {
+                setTimeout(doABatch, 0);
+            }
+            particleSystem.geometry.verticesNeedUpdate = true;
+            particleSystem.geometry.colorsNeedUpdate = true;
+        }
+        doABatch();
+
+        let down = false;
+        let sx = 0;
+        let sy = 0;
+
+        domNode.onmousedown = function(ev) {
             down = true;
             sx = ev.clientX;
             sy = ev.clientY;
         };
-        window.onmouseup = function() {
+        domNode.onmouseup = function() {
             down = false;
         };
-        window.onmousemove = function(ev) {
+        domNode.onmousemove = function(ev) {
             if (down) {
                 var dx = ev.clientX - sx;
                 var dy = ev.clientY - sy;
@@ -291,29 +268,52 @@
                 sy += dy;
             }
         }
-        var animating = false;
-        window.ondblclick = function() {
-            animating = !animating;
-        };
-
-        function animate(t) {
-            if (!paused) {
-                last = t;
-                renderer.clear();
-                camera.lookAt(scene.position);
-                renderer.render(scene, camera);
-            }
-            window.requestAnimationFrame(animate, renderer.domElement);
-        };
-        animate(new Date().getTime());
-        onmessage = function(ev) {
-            paused = (ev.data == 'pause');
-        };
     }
 
+    const makeADomain = (data, key) => d3.extent(data, d => +d[key]);
+
     d3.csv("./f-NCl!vY[qb[mCAG.csv", function(data) {
-        points = getPts(data);
-        scatter(points);
+        const extents = {
+            birthdate: makeADomain(data, 'birthdate'),
+            age: makeADomain(data, 'age'),
+            position: makeADomain(data, 'position'),
+            ballRadius: makeADomain(data, 'ballRadius'),
+            mutationRate: makeADomain(data, 'mutationRate'),
+            generation: makeADomain(data, 'generation'),
+            hue: makeADomain(data, 'hue'),
+            restitution: makeADomain(data, 'restitution')
+        };
+
+        scatter(data, extents, [1250, 700], {
+            x: 'birthdate',
+            y: 'ballRadius',
+            z: 'position'
+        });
+        scatter(data, extents, [1250, 700], {
+            x: 'birthdate',
+            y: 'age',
+            z: 'position'
+        });
+        scatter(data, extents, [1250, 700], {
+            x: 'birthdate',
+            y: 'mutationRate',
+            z: 'ballRadius'
+        });
+        scatter(data, extents, [1250, 700], {
+            x: 'birthdate',
+            y: 'mutationRate',
+            z: 'restitution'
+        });
+        scatter(data, extents, [1250, 700], {
+            x: 'birthdate',
+            y: 'mutationRate',
+            z: 'position'
+        });
+        scatter(data, extents, [1250, 700], {
+            x: 'birthdate',
+            y: 'age',
+            z: 'mutationRate'
+        });
     });
 
     </script>

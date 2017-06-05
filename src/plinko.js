@@ -2,7 +2,7 @@ let pegSize = 14;
 let ballRadius = 6;
 
 let plinkoWidth = 750;
-let plinkoHeight = 900;
+let plinkoHeight = 1800;
 let countX = 10;
 let countY = 20;
 

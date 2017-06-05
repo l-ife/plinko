@@ -252,7 +252,7 @@ function scatter(points, extents, [w, h], keys) {
 
 const makeADomain = (data, key) => d3.extent(data, d => +d[key]);
 
-d3.csv("./thebigone.csv", function(data) {
+d3.csv("../data/thebigone.csv", function(data) {
     console.log('data loaded');
 
     const extents = {

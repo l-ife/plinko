@@ -32,7 +32,7 @@ const defaults = {
 
 const livereloadServer = livereload('src');
 const server = serve({
-  contentBase: ['html', 'lib', 'data'],
+  contentBase: '.',
   port: 3000
 });
 

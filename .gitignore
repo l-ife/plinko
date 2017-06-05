@@ -1,6 +1,5 @@
 # data and output
 /data/*.csv
-/data/node_modules
 /lib
 
 # packages

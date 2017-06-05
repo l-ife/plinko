@@ -16,8 +16,6 @@ const uuid = (length) => {
     return theReturn.join('');
 }
 
-const sessionId = uuid(16);
-
 const getTime = (passedInEngine) => (passedInEngine || engine).timing.timestamp;
 
 import Matter from 'matter-js/build/matter';

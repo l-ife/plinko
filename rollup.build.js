@@ -4,36 +4,86 @@ const resolve = require('rollup-plugin-node-resolve');
 const babel = require('rollup-plugin-babel');
 const commonjs = require('rollup-plugin-commonjs');
 const livereload = require('rollup-plugin-livereload');
+const dsv = require('rollup-plugin-dsv');
 const serve = require('rollup-plugin-serve');
 
+// const express = require('express');
+// const staticServer = express();
+
+// staticServer.use(express.static('.'));
+
+// staticServer.listen(3000, function() {
+//     console.log('Listening on 3000');
+// });
 
 const defaults = {
   format: 'iife',
   sourceMap: true,
   plugins: [
+    resolve(),
     commonjs(),
     babel({
       exclude: 'node_modules/**',
       exclude: 'data/**'
     }),
-    resolve({
-      browser: true
-    }),
-    serve('lib'),
-    livereload()
+    dsv()
   ]
 };
 
+const livereloadServer = livereload('src');
+const server = serve({
+  contentBase: ['html', 'lib', 'data'],
+  port: 3000
+});
+
 const configs = [
-  // Object.assign({}, defaults, {
-  //   entry: 'src/index.js',
-  //   dest: 'lib/index.js',
-  //   moduleName: 'Index'
-  // }),
   Object.assign({}, defaults, {
-    entry: 'src/plinko.js',
-    dest: 'lib/plinko.js',
-    moduleName: 'Plinko'
+    entry: 'src/test-matterjs.js',
+    dest: 'lib/node/test-matterjs.js',
+    moduleName: 'test-matterjs'
+  }),
+  Object.assign({}, defaults, {
+    entry: 'src/test-matterjs.js',
+    dest: 'lib/browser/test-matterjs.js',
+    moduleName: 'Index',
+    plugins: defaults.plugins.concat([
+      livereloadServer,
+      server
+    ])
+  }),
+  Object.assign({}, defaults, {
+    entry: 'src/browser/plinko.js',
+    dest: 'lib/browser/plinko.js',
+    moduleName: 'Plinko',
+    plugins: defaults.plugins.concat([
+      livereloadServer,
+      server
+    ])
+  }),
+  Object.assign({}, defaults, {
+    entry: 'src/node/plinko.js',
+    dest: 'lib/node/plinko.js',
+    moduleName: 'Plinko',
+    plugins: defaults.plugins.concat([
+    ])
+  }),
+  Object.assign({}, defaults, {
+    entry: 'src/browser/data/3d.js',
+    dest: 'lib/browser/data/3d.js',
+    moduleName: '3d-scatterplot',
+    plugins: defaults.plugins.concat([
+      livereloadServer,
+      server
+    ])
+  }),
+  Object.assign({}, defaults, {
+    entry: 'src/browser/data/2d.js',
+    dest: 'lib/browser/data/2d.js',
+    moduleName: '3d-scatterplot',
+    plugins: defaults.plugins.concat([
+      // livereloadServer,
+      server
+    ])
   })
 ];
 
@@ -64,3 +114,4 @@ watchers.forEach(
   (watcher, ndx) =>
     watcher.on('event', event => eventHandler(event, configs[ndx].entry))
 );
+

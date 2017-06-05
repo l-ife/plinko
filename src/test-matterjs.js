@@ -1,4 +1,4 @@
-const _ = require('lodash');
+const range = require('lodash/range');
 const { Bodies, Engine, Events, Render, World } = require('matter-js/build/matter');
 const { poisson, beta, betaRight, betaLeft } = require('./distributions');
 
@@ -9,7 +9,7 @@ const rand = (max) => Math.random()*max;
 
 // create two boxes and a ground
 const alphabet =
-    _.range('A'.charCodeAt(0), 'Z'.charCodeAt(0)+1).map(String.fromCharCode);
+    range('A'.charCodeAt(0), 'Z'.charCodeAt(0)+1).map(String.fromCharCode);
 let bodies = alphabet.map((label) => {
     return Bodies.polygon(
         200+rand(400),

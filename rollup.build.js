@@ -6,6 +6,7 @@ const commonjs = require('rollup-plugin-commonjs');
 const livereload = require('rollup-plugin-livereload');
 const dsv = require('rollup-plugin-dsv');
 const serve = require('rollup-plugin-serve');
+const uglify = require('rollup-plugin-uglify');
 
 // const express = require('express');
 // const staticServer = express();
@@ -47,6 +48,7 @@ const configs = [
     dest: 'lib/browser/test-matterjs.js',
     moduleName: 'Index',
     plugins: defaults.plugins.concat([
+      uglify(),
       livereloadServer,
       server
     ])
@@ -56,6 +58,7 @@ const configs = [
     dest: 'lib/browser/plinko.js',
     moduleName: 'Plinko',
     plugins: defaults.plugins.concat([
+      uglify(),
       livereloadServer,
       server
     ])
@@ -72,6 +75,7 @@ const configs = [
     dest: 'lib/browser/data/3d.js',
     moduleName: '3d-scatterplot',
     plugins: defaults.plugins.concat([
+      uglify(),
       livereloadServer,
       server
     ])
@@ -81,6 +85,7 @@ const configs = [
     dest: 'lib/browser/data/2d.js',
     moduleName: '3d-scatterplot',
     plugins: defaults.plugins.concat([
+      uglify(),
       // livereloadServer,
       server
     ])

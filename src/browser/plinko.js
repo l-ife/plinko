@@ -1,67 +1,64 @@
-import p5 from 'p5';
 import Matter from 'matter-js/build/matter';
 const { Bodies, Body, Composite, Engine, Events, Render, World } = Matter;
 
 import plinko from '../plinko.js';
 const { setup, draw, utils: { getTime }, consts: { plinkoWidth, plinkoHeight, oldAge } } = plinko;
-console.log('test');
 
-const theSketch = new p5((p) => {
-    let canvas;
-    let engine;
-    let beginTime;
+let canvas;
+let engine;
+let beginTime;
 
-    p.setup = () => {
-        ({ engine, beginTime } = setup(p));
-        Engine.run(engine);
+console.log('loaded');
 
-        p.colorMode(p.HSB, 255);
-        canvas = p.createCanvas(plinkoWidth + 600, plinkoHeight);
-    };
+window.setup = () => {
+    ({ engine, beginTime } = setup());
+    Engine.run(engine);
 
-    p.draw = () => {
-        p.background(255);
-        p.strokeWeight(0);
+    colorMode(HSB, 255);
+    canvas = createCanvas(plinkoWidth + 600, plinkoHeight);
+};
 
-        p.translate(p.width / 2 - plinkoWidth / 2, 0);
+window.draw = () => {
+    background(255);
+    strokeWeight(0);
 
-        draw({
-            p,
-            drawBall: ({ p, ball }) => {
-                const {
-                    render: { fillStyle, strokeStyle, lineWidth, visible },
-                    position: { x, y },
-                    circleRadius,
-                    isStatic,
-                    isSensor,
-                    label
-                } = ball;
+    translate(width / 2 - plinkoWidth / 2, 0);
 
-                const ballAge = (getTime(engine) - ball.birthdate);
-                const darkerIfOld = (ballAge > oldAge) ? 0.4 : 1;
+    draw({
+        drawBall: ({ p, ball }) => {
+            const {
+                render: { fillStyle, strokeStyle, lineWidth, visible },
+                position: { x, y },
+                circleRadius,
+                isStatic,
+                isSensor,
+                label
+            } = ball;
 
-                p.fill([
-                    fillStyle[0],
-                    255 * darkerIfOld,
-                    255 * darkerIfOld
-                ]);
+            const ballAge = (getTime(engine) - ball.birthdate);
+            const darkerIfOld = (ballAge > oldAge) ? 0.4 : 1;
 
-                p.ellipse(x, y, circleRadius * 2);
-            },
-            drawPeg: ({ p, peg }) => {
-                const {
-                    render: { fillStyle, strokeStyle, lineWidth, visible },
-                    position: { x, y },
-                    circleRadius,
-                    isStatic,
-                    isSensor,
-                    label
-                } = peg;
+            fill([
+                fillStyle[0],
+                255 * darkerIfOld,
+                255 * darkerIfOld
+            ]);
 
-                p.fill(240);
+            ellipse(x, y, circleRadius * 2);
+        },
+        drawPeg: ({ p, peg }) => {
+            const {
+                render: { fillStyle, strokeStyle, lineWidth, visible },
+                position: { x, y },
+                circleRadius,
+                isStatic,
+                isSensor,
+                label
+            } = peg;
 
-                p.ellipse(x, y, circleRadius * 2);
-            }
-        });
-    };
-}, 'body');
+            fill(240);
+
+            ellipse(x, y, circleRadius * 2);
+        }
+    });
+};

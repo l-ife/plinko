@@ -4,8 +4,6 @@ const { Bodies, Body, Composite, Engine, Events, Render, World } = Matter;
 import plinko from '../plinko.js';
 const { setup, draw, utils: { getTime } } = plinko;
 
-console.log('test');
-
 let { engine, beginTime } = setup();
 console.log(`ballRadius,position,hue,mutationRate,restitution,generation,birthdate,age,ancestry`);
 while (true) {

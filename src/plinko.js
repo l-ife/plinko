@@ -255,7 +255,6 @@ export default {
         oldAge
     }
 };
-console.log('wtf');
 
 
 /*

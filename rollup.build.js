@@ -39,21 +39,6 @@ const server = serve({
 
 const configs = [
   Object.assign({}, defaults, {
-    entry: 'src/test-matterjs.js',
-    dest: 'lib/node/test-matterjs.js',
-    moduleName: 'test-matterjs'
-  }),
-  Object.assign({}, defaults, {
-    entry: 'src/test-matterjs.js',
-    dest: 'lib/browser/test-matterjs.js',
-    moduleName: 'Index',
-    plugins: defaults.plugins.concat([
-      uglify(),
-      livereloadServer,
-      server
-    ])
-  }),
-  Object.assign({}, defaults, {
     entry: 'src/browser/plinko.js',
     dest: 'lib/browser/plinko.js',
     moduleName: 'Plinko',
@@ -87,6 +72,31 @@ const configs = [
     plugins: defaults.plugins.concat([
       uglify(),
       // livereloadServer,
+      server
+    ])
+  }),
+  Object.assign({}, defaults, {
+    entry: 'src/test-matterjs.js',
+    dest: 'lib/node/test-matterjs.js',
+    moduleName: 'matterjs-test'
+  }),
+  Object.assign({}, defaults, {
+    entry: 'src/test-matterjs.js',
+    dest: 'lib/browser/test-matterjs.js',
+    moduleName: 'matterjs-test-node',
+    plugins: defaults.plugins.concat([
+      uglify(),
+      livereloadServer,
+      server
+    ])
+  }),
+  Object.assign({}, defaults, {
+    entry: 'src/browser/create-random-dots.js',
+    dest: 'lib/browser/create-random-dots.js',
+    moduleName: 'p5-js-test',
+    plugins: defaults.plugins.concat([
+      uglify(),
+      livereloadServer,
       server
     ])
   })

@@ -15,7 +15,7 @@ window.setup = () => {
     Engine.run(engine);
 
     colorMode(HSB, 255);
-    canvas = createCanvas(plinkoWidth + 600, plinkoHeight);
+    canvas = createCanvas(windowWidth, windowHeight);
 };
 
 window.draw = () => {
@@ -61,4 +61,8 @@ window.draw = () => {
             ellipse(x, y, circleRadius * 2);
         }
     });
+};
+
+window.windowResized = () => {
+    resizeCanvas(windowWidth, windowHeight);
 };

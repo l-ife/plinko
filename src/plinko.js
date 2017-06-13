@@ -80,7 +80,7 @@ const stepLogic = ({ beforeKillBall, afterCycle, drawBall, drawPeg }) => {
             const getBallAgeSurvivalFactor = (randomFactorRange) => {
                 return ballAgeSurvivalFactor(ballAge, randomFactorRange);
             };
-            if (bodies.length > 1000 && getBallAgeSurvivalFactor() > 0.50) {
+            if (bodies.length > 1000 && getBallAgeSurvivalFactor() < 0.50) {
                 killBall({ ball: n, beforeKillBall }, TYPES_OF_BIRTH_AND_DEATH.DEATH.DIEOFF);
                 return;
             }

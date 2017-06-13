@@ -16,7 +16,11 @@ export const theBookOfPlinkoersHeaders = [
     'age',
     'ancestry',
     'birthType',
-    'deathType'
+    'deathType',
+    'deathPositionX',
+    'deathPositionY',
+    'midstreamChildren',
+    'ate'
 ];
 
 export const ballToEntry = (ball, now, beginTime) => {
@@ -30,7 +34,11 @@ export const ballToEntry = (ball, now, beginTime) => {
         generation,
         ancestry,
         birthType,
-        deathType
+        deathType,
+        deathPositionX,
+        deathPositionY,
+        midstreamChildren,
+        ate
     } = ball.genome;
     const ballAge = (now - ball.birthdate);
     return [
@@ -48,7 +56,11 @@ export const ballToEntry = (ball, now, beginTime) => {
         ballAge,
         ancestry,
         birthType,
-        deathType
+        deathType,
+        deathPositionX,
+        deathPositionY,
+        midstreamChildren,
+        ate
     ];
 };
 

@@ -1,3 +1,5 @@
+// const heapdump = require('heapdump');
+
 const { join: pathJoin } = require('path');
 
 const { createWriteStream, openSync } = require('fs');
@@ -33,21 +35,30 @@ const sessionId = uuid(16);
 // let writeToTheBook = setupFileStream(theBookFilePath);
 
 // writeToTheBook.write(theBookOfPlinkoersHeaders.join(',')+'\n');
+
+const beforeKillBall = (ball) => {
+    const now = getTime(engine);
+    // writeToTheBook.write(ballToEntry(ball, now, beginTime).join(',')+'\n');
+    console.log(ballToEntry(ball, now, beginTime).join(','));
+};
+
 console.log(theBookOfPlinkoersHeaders.join(','));
 
-let { engine, beginTime } = setup();
+let { engine, beginTime } = setup({ beforeKillBall });
 
 const stepLogicHandlers = {
-    beforeKillBall: (ball) => {
-        const now = getTime(engine);
-        // writeToTheBook.write(ballToEntry(ball, now, beginTime).join(',')+'\n');
-        console.log(ballToEntry(ball, now, beginTime).join(','));
-    }
+    beforeKillBall
 };
 
 while (true) {
+// setInterval(() => {
     Events.trigger(engine, 'tick', { timestamp: engine.timing.timestamp });
     Engine.update(engine, engine.timing.delta);
     Events.trigger(engine, 'afterTick', { timestamp: engine.timing.timestamp });
     stepLogic(stepLogicHandlers);
+// }, 0);
 }
+
+// setInterval(() => {
+//     heapdump.writeSnapshot('./' + Date.now() + '.heapsnapshot');
+// }, 100000);

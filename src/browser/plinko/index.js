@@ -25,14 +25,6 @@ window.doASave = () => {
 
 console.log('loaded');
 
-window.setup = () => {
-    ({ engine, beginTime } = setup());
-    Engine.run(engine);
-
-    colorMode(HSB, 255);
-    createCanvas(window.windowWidth, window.windowHeight);
-};
-
 const stepLogicHandlers = {
     beforeKillBall(ball) {
         bookOfPlinkoers.addDead(ball, getTime(engine), beginTime);
@@ -51,6 +43,14 @@ const stepLogicHandlers = {
         fill(240);
         ellipse(x, y, circleRadius * 2);
     }
+};
+
+window.setup = () => {
+    ({ engine, beginTime } = setup({ beforeKillBall: stepLogicHandlers.beforeKillBall }));
+    Engine.run(engine);
+
+    colorMode(HSB, 255);
+    createCanvas(window.windowWidth, window.windowHeight);
 };
 
 window.draw = () => {

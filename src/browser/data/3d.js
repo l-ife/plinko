@@ -1,3 +1,4 @@
+import get from 'lodash/get';
 // TODO: Make lines from birthdate to deathdate
 
 var format = d3.format("+.3f");
@@ -43,7 +44,7 @@ function createText2D(text, color, font, size, segW, segH) {
     return mesh;
 }
 
-function scatter(points, extents, [w, h], keys) {
+function scatter(points, extents, [w, h], keyPaths) {
 
     var renderer = new THREE.WebGLRenderer({
         antialias: true
@@ -67,9 +68,9 @@ function scatter(points, extents, [w, h], keys) {
     scatterPlot.rotation.y = 0;
 
     const xyzExtents = {
-        x: extents[keys.x],
-        y: extents[keys.y],
-        z: extents[keys.z]
+        x: extents[keyPaths.x],
+        y: extents[keyPaths.y],
+        z: extents[keyPaths.z]
     };
 
     var vs = {
@@ -133,7 +134,7 @@ function scatter(points, extents, [w, h], keys) {
     line.type = THREE.Lines;
     scatterPlot.add(line);
 
-    var titleX = createText2D(`-${keys.x}`);
+    var titleX = createText2D(`-${keyPaths.x}`);
     titleX.position.x = xScale(vs.x.min) - 12,
     titleX.position.y = 5;
     scatterPlot.add(titleX);
@@ -143,7 +144,7 @@ function scatter(points, extents, [w, h], keys) {
     valueX.position.y = -5;
     scatterPlot.add(valueX);
 
-    var titleX = createText2D(keys.x);
+    var titleX = createText2D(keyPaths.x);
     titleX.position.x = xScale(vs.x.max) + 12;
     titleX.position.y = 5;
     scatterPlot.add(titleX);
@@ -153,7 +154,7 @@ function scatter(points, extents, [w, h], keys) {
     valueX.position.y = -5;
     scatterPlot.add(valueX);
 
-    var titleY = createText2D(`-${keys.y}`);
+    var titleY = createText2D(`-${keyPaths.y}`);
     titleY.position.y = yScale(vs.y.min) - 5;
     scatterPlot.add(titleY);
 
@@ -161,7 +162,7 @@ function scatter(points, extents, [w, h], keys) {
     valueY.position.y = yScale(vs.y.min) - 15,
     scatterPlot.add(valueY);
 
-    var titleY = createText2D(keys.y);
+    var titleY = createText2D(keyPaths.y);
     titleY.position.y = yScale(vs.y.max) + 15;
     scatterPlot.add(titleY);
 
@@ -169,11 +170,11 @@ function scatter(points, extents, [w, h], keys) {
     valueY.position.y = yScale(vs.y.max) + 5,
     scatterPlot.add(valueY);
 
-    var titleZ = createText2D(`-${keys.z} ${format(xyzExtents.z[0])}`);
+    var titleZ = createText2D(`-${keyPaths.z} ${format(xyzExtents.z[0])}`);
     titleZ.position.z = zScale(vs.z.min) + 2;
     scatterPlot.add(titleZ);
 
-    var titleZ = createText2D(`${keys.z} ${format(xyzExtents.z[1])}`);
+    var titleZ = createText2D(`${keyPaths.z} ${format(xyzExtents.z[1])}`);
     titleZ.position.z = zScale(vs.z.max) + 2;
     scatterPlot.add(titleZ);
 
@@ -186,7 +187,7 @@ function scatter(points, extents, [w, h], keys) {
     for (var k = 0; k < points.length; k++) {
         // const p = points[k];
         // pointGeo.vertices.push(new THREE.Vector3(
-        //     xScale(+p[keys.x]), yScale(+p[keys.y]), zScale(+p[keys.z])
+        //     xScale(+p[keyPaths.x]), yScale(+p[keyPaths.y]), zScale(+p[keyPaths.z])
         // ));
         // pointGeo.colors.push(new THREE.Color(d3.hsl((+p.hue/255)*360, 1, 0.5, 1).toString()));
         pointGeo.vertices.push(new THREE.Vector3());
@@ -211,7 +212,7 @@ function scatter(points, extents, [w, h], keys) {
         for (var j = 0; j < 150000 && i < points.length; j++ && i++) {
             const p = points[i];
             particleSystem.geometry.vertices[i] = new THREE.Vector3(
-                xScale(+p[keys.x]), yScale(+p[keys.y]), zScale(+p[keys.z])
+                xScale(+get(p, keyPaths.x)), yScale(+get(p, keyPaths.y)), zScale(+get(p, keyPaths.z))
             );
             particleSystem.geometry.colors[i] = new THREE.Color(d3.hsl((+p.hue/255)*360, 1, 0.5, 1).toString());
         }
@@ -250,9 +251,9 @@ function scatter(points, extents, [w, h], keys) {
     }
 }
 
-const makeADomain = (data, key) => d3.extent(data, d => +d[key]);
+const makeADomain = (data, keyPath) => d3.extent(data, d => +get(d, keyPath));
 
-d3.csv("../data/thebigone.csv", function(data) {
+d3.csv("../data/878452Wc4n1uEFvZ.csv", function(data) {
     console.log('data loaded');
 
     const extents = {
@@ -260,11 +261,37 @@ d3.csv("../data/thebigone.csv", function(data) {
         age: makeADomain(data, 'age'),
         position: makeADomain(data, 'position'),
         ballRadius: makeADomain(data, 'ballRadius'),
-        mutationRate: makeADomain(data, 'mutationRate'),
+        'mutationRate:ballRadius': makeADomain(data, 'mutationRate:ballRadius'),
         generation: makeADomain(data, 'generation'),
         hue: makeADomain(data, 'hue'),
         restitution: makeADomain(data, 'restitution')
     };
+
+    scatter(data, extents, [1250, 700], {
+        x: 'age',
+        y: 'ballRadius',
+        z: 'position'
+    });
+    scatter(data, extents, [1250, 700], {
+        x: 'age',
+        y: 'mutationRate:position',
+        z: 'position'
+    });
+    scatter(data, extents, [1250, 700], {
+        x: 'age',
+        y: 'mutationRate:ballRadius',
+        z: 'ballRadius'
+    });
+    scatter(data, extents, [1250, 700], {
+        x: 'age',
+        y: 'mutationRate:restitution',
+        z: 'restitution'
+    });
+    scatter(data, extents, [1250, 700], {
+        x: 'age',
+        y: 'ballRadius',
+        z: 'restitution'
+    });
 
     scatter(data, extents, [1250, 700], {
         x: 'birthdate',
@@ -278,22 +305,27 @@ d3.csv("../data/thebigone.csv", function(data) {
     });
     scatter(data, extents, [1250, 700], {
         x: 'birthdate',
-        y: 'mutationRate',
+        y: 'age',
         z: 'ballRadius'
     });
     scatter(data, extents, [1250, 700], {
         x: 'birthdate',
-        y: 'mutationRate',
+        y: 'mutationRate:ballRadius',
+        z: 'ballRadius'
+    });
+    scatter(data, extents, [1250, 700], {
+        x: 'birthdate',
+        y: 'mutationRate:ballRadius',
         z: 'restitution'
     });
     scatter(data, extents, [1250, 700], {
         x: 'birthdate',
-        y: 'mutationRate',
+        y: 'mutationRate:ballRadius',
         z: 'position'
     });
     scatter(data, extents, [1250, 700], {
         x: 'birthdate',
         y: 'age',
-        z: 'mutationRate'
+        z: 'mutationRate:ballRadius'
     });
 });

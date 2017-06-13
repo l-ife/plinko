@@ -7,9 +7,13 @@
     "dev": "node rollup.build.js"
   },
   "dependencies": {
+    "buffered-writer": "^0.2.3",
+    "canvas": "^1.6.5",
+    "gif.js": "^0.2.0",
     "lodash": "^4.17.4",
     "matter-js": "^0.12.0",
-    "p5": "^0.5.10"
+    "p5": "^0.5.10",
+    "ws": "^3.0.0"
   },
   "devDependencies": {
     "babel-plugin-external-helpers": "^6.22.0",
@@ -20,9 +24,15 @@
     "rollup-plugin-commonjs": "^8.0.2",
     "rollup-plugin-dsv": "^1.2.0",
     "rollup-plugin-livereload": "^0.4.0",
+    "rollup-plugin-node-builtins": "^2.1.2",
+    "rollup-plugin-node-globals": "^1.1.0",
     "rollup-plugin-node-resolve": "^3.0.0",
     "rollup-plugin-serve": "^0.3.0",
     "rollup-plugin-uglify": "^2.0.1",
     "rollup-watch": "^3.2.2"
+  },
+  "optionalDependencies": {
+    "bufferutil": "^3.0.1",
+    "utf-8-validate": "^3.0.2"
   }
 }

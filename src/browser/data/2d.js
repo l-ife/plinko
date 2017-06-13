@@ -94,7 +94,8 @@ function makeACanvas(data, xKey, yKey, domains) {
     paintCanvas(canvas.node(), data, x, y, xKey, yKey);
 }
 
-d3.csv("../data/thebigone.csv", function(data) {
+d3.csv("../data/878452Wc4n1uEFvZ.csv", function(data) {
+
     console.log('data loaded');
 
     const makeADomain = (data, key) => d3.extent(data, d => +d[key]);

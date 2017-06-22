@@ -31,8 +31,7 @@ watch([
     plugins: [
       commonjs(),
       babel({
-        exclude: 'node_modules/**',
-        exclude: 'data/**'
+        exclude: ['node_modules/**', 'data/**']
       })
     ]
   }

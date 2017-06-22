@@ -12,8 +12,19 @@ watch([
     plugins: [
       commonjs(),
       babel({
-        exclude: 'node_modules/**',
-        exclude: 'data/**'
+        exclude: ['node_modules/**', 'data/**']
+      })
+    ]
+  }),
+  Object.assign({}, {
+    entry: 'src/node/child-logger.js',
+    dest: 'lib/node/child-logger.js',
+    moduleName: 'ChildLogger',
+    format: 'cjs',
+    plugins: [
+      commonjs(),
+      babel({
+        exclude: ['node_modules/**', 'data/**']
       })
     ]
   })

@@ -1,15 +1,4 @@
-// const heapdump = require('heapdump');
-
 const { join: pathJoin } = require('path');
-
-const { createWriteStream, openSync } = require('fs');
-
-const setupFileStream = function(filename) {
-    const fd = openSync(filename, 'wx');
-    let writeStream = createWriteStream(undefined, { fd });
-    return writeStream;
-}
-
 
 import Matter from 'matter-js/build/matter';
 const { Bodies, Body, Engine, Events, Render, World } = Matter;
@@ -23,26 +12,25 @@ import {
     theBookOfPlinkoersHeaders, ballToEntry
 } from '../logging-utils';
 
+import { setupCsvWriter } from './logging-utils';
 
-const [ node, file, writeDirPath = './data' ] = process.argv;
+
+const [ node, file, writeDirPath = './data/test/' ] = process.argv;
 
 const sessionId = uuid(16);
 
-// const theBookFilePath = pathJoin(writeDirPath, `${sessionId}-BoP.csv`);
+const theBookFilePath = pathJoin(writeDirPath, `${sessionId}-BoP.csv`);
 
-// console.log(`Writing to ${theBookFilePath}`);
+console.log(`Writing to ${theBookFilePath}`);
 
-// let writeToTheBook = setupFileStream(theBookFilePath);
+let { write: writeToTheBook } = setupCsvWriter(theBookFilePath);
 
-// writeToTheBook.write(theBookOfPlinkoersHeaders.join(',')+'\n');
+writeToTheBook(theBookOfPlinkoersHeaders);
 
 const beforeKillBall = (ball) => {
     const now = getTime(engine);
-    // writeToTheBook.write(ballToEntry(ball, now, beginTime).join(',')+'\n');
-    console.log(ballToEntry(ball, now, beginTime).join(','));
+    writeToTheBook(ballToEntry(ball, now, beginTime));
 };
-
-console.log(theBookOfPlinkoersHeaders.join(','));
 
 let { engine, beginTime } = setup({ beforeKillBall });
 

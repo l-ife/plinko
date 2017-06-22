@@ -12,8 +12,7 @@ const defaults = {
     resolve(),
     commonjs(),
     babel({
-      exclude: 'node_modules/**',
-      exclude: 'data/**'
+      exclude: ['node_modules/**', 'data/**']
     }),
     dsv()
   ]

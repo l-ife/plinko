@@ -7,9 +7,7 @@
     "dev": "node rollup.build.js"
   },
   "dependencies": {
-    "buffered-writer": "^0.2.3",
     "canvas": "^1.6.5",
-    "gif.js": "^0.2.0",
     "lodash": "^4.17.4",
     "matter-js": "^0.12.0",
     "p5": "^0.5.10",

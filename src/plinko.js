@@ -20,12 +20,13 @@ const TYPES_OF_BIRTH_AND_DEATH = {
         NEW: 0,
         LOOPED_AROUND: 1,
         LOOP_AROUND_SPLIT: 2,
-        MIDSTREAM_SPAWN: 3
+        MIDSTREAM_SPAWN: 3,
+        REBIRTH_FROM_THE_ANCIENTS: 4
     },
     DEATH: {
-        DIEOFF: 4,
-        FELL_OFF_BOTTOM: 5,
-        EATEN: 6
+        DIEOFF: 5,
+        FELL_OFF_BOTTOM: 6,
+        EATEN: 7
     }
 };
 
@@ -44,6 +45,7 @@ const TYPES_OF_BIRTH_AND_DEATH = {
 let engine;
 let beginTime;
 let trailingData;
+// let theBest;
 
 const getTime = (passedInEngine) => (passedInEngine || engine).timing.timestamp;
 
@@ -66,11 +68,11 @@ const stepLogic = ({ beforeKillBall, afterCycle, drawBall, drawPeg }) => {
     let bodies = Composite.allBodies(engine.world);
 
     const now = getTime();
-    const baselineCount = 1000;
+    const baselineCount = 600;
     const numOfBalls = bodies.length - numOfPegs;
-    let ballsNeeded = Math.max(baselineCount - numOfBalls, 0)/10000;
+    let ballsNeeded = Math.max(baselineCount - numOfBalls, 0)/1000;
     for (; ballsNeeded > 0; ballsNeeded--) {
-        spawnBall(undefined, TYPES_OF_BIRTH_AND_DEATH.BIRTH.NEW);
+        spawnBall(undefined, TYPES_OF_BIRTH_AND_DEATH.BIRTH.REBIRTH_FROM_THE_ANCIENTS);
     }
 
     bodies.forEach((n, i) => {
@@ -115,6 +117,7 @@ const setup = ({ beforeKillBall } = {}) => {
     engine = Engine.create();
     beginTime = getTime();
     trailingData = TrailingData({ age: 3000 });
+    // theBest = SortedLimitedBuffer(100);
 
     Events.on(engine, "collisionStart", ({ pairs, timestamp, source, name }) => {
         pairs.forEach(({ bodyA, bodyB }) => {
@@ -122,12 +125,12 @@ const setup = ({ beforeKillBall } = {}) => {
                 (bodyA.label === 'ball' && bodyB.label === 'ball') &&
                 (bodyA.genome.ancestry !== bodyB.genome.ancestry)
             ) {
-                if (bodyA.birthdate > bodyB.birthdate) {
-                    killBall({ ball: bodyA, beforeKillBall }, TYPES_OF_BIRTH_AND_DEATH.DEATH.EATEN);
-                    bodyB.genome.ate++;
-                } else {
+                if (bodyA.speed > bodyB.speed && bodyA.genome.ballRadius > 7) {
                     killBall({ ball: bodyB, beforeKillBall }, TYPES_OF_BIRTH_AND_DEATH.DEATH.EATEN);
                     bodyA.genome.ate++;
+                } else if (bodyB.speed > bodyA.speed && bodyB.genome.ballRadius > 7) {
+                    killBall({ ball: bodyA, beforeKillBall }, TYPES_OF_BIRTH_AND_DEATH.DEATH.EATEN);
+                    bodyB.genome.ate++;
                 }
             }
         })
@@ -187,6 +190,40 @@ function mutate({ parentValue, bounds, magnitude, rate, defaultVal }) {
     return bounds(parentValue + mutation);
 }
 
+const SortedLimitedBuffer = (bufferLength) => {
+    let objects = {};
+    let valueBuffer = [];
+
+    function insertSorted(array, item) {
+        for (let j = i - 1; array[j] > item; j--) {
+            array[j + 1] = array[j];
+        }
+        array[j + 1] = item;
+    }
+
+    return {
+        potentiallyInsert(ball, ballAge) {
+            if (valueBuffer.length >= bufferLength) {
+                const min = valueBuffer[0];
+                if (ballAge > min) {
+                    delete objects[min];
+                    delete valueBuffer[0];
+                }
+            }
+            insertSorted(valueBuffer, ballAge);
+            objects[ballAge] = ball;
+        },
+        getRandomBest() {
+            if (valueBuffer.length === 0) return;
+            return valueBuffer[parseInt(Math.random()*valueBuffer.length)];
+        },
+        getTheBest() {
+            if (valueBuffer.length === 0) return;
+            return valueBuffer[valueBuffer.length - 1];
+        }
+    };
+}
+
 function killBall({ ball, beforeKillBall }, deathType) {
     if (beforeKillBall) {
         const { position: { x, y } } = ball;
@@ -196,6 +233,7 @@ function killBall({ ball, beforeKillBall }, deathType) {
         beforeKillBall && beforeKillBall(ball);
     }
     const ballAge = (getTime(engine) - ball.birthdate);
+    // theBest.potentiallyInsert(ball, ballAge);
     trailingData.addPoint('age', ballAge);
     removeBody(ball);
 }
@@ -265,7 +303,7 @@ function spawnBall(parent = { genome: { mutationRates: {} } }, birthType) {
     });
     const midstreamBirthrate = mutate({
         parentValue: parent.genome.midstreamBirthrate,
-        bounds: bounds(0, 1.5),
+        bounds: bounds(0, 1),
         magnitude: 0.25,
         rate: mutationRates.midstreamBirthrate,
         defaultVal: 1

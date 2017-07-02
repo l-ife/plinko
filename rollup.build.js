@@ -9,7 +9,7 @@ const defaults = {
   format: 'iife',
   sourceMap: true,
   plugins: [
-    resolve(),
+    resolve({ module: true }),
     commonjs(),
     babel({
       exclude: ['node_modules/**', 'data/**']

@@ -15,7 +15,7 @@ import {
 import { setupCsvWriter } from './logging-utils';
 
 
-const [ node, file, writeDirPath = './data/test/' ] = process.argv;
+const [ node, file, writeDirPath = './data/' ] = process.argv;
 
 const sessionId = uuid(16);
 
@@ -38,15 +38,12 @@ const stepLogicHandlers = {
     beforeKillBall
 };
 
-while (true) {
-// setInterval(() => {
-    Events.trigger(engine, 'tick', { timestamp: engine.timing.timestamp });
-    Engine.update(engine, engine.timing.delta);
-    Events.trigger(engine, 'afterTick', { timestamp: engine.timing.timestamp });
-    stepLogic(stepLogicHandlers);
-// }, 0);
-}
-
-// setInterval(() => {
-//     heapdump.writeSnapshot('./' + Date.now() + '.heapsnapshot');
-// }, 100000);
+setInterval(() => {
+	let i = 1000;
+	while (--i > 0) {
+	    Events.trigger(engine, 'tick', { timestamp: engine.timing.timestamp });
+	    Engine.update(engine, engine.timing.delta);
+	    Events.trigger(engine, 'afterTick', { timestamp: engine.timing.timestamp });
+	    stepLogic(stepLogicHandlers);
+	}
+}, 0);

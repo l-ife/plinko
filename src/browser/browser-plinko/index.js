@@ -57,7 +57,7 @@ window.draw = () => {
     background(255);
     strokeWeight(0);
 
-    translate(width / 2 - plinkoWidth / 2, 0);
+    translate((width / 2) - (plinkoWidth / 2), 0);
 
     stepLogic(stepLogicHandlers);
 };

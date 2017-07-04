@@ -6,8 +6,8 @@ const resolve = require('rollup-plugin-node-resolve');
 
 watch([
   Object.assign({}, {
-    entry: 'src/node/plinko.js',
-    dest: 'lib/node/plinko.js',
+    entry: 'src/node/node-plinko/index.js',
+    dest: 'lib/node/node-plinko.js',
     moduleName: 'Plinko',
     format: 'cjs',
     plugins: [

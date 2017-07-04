@@ -14,8 +14,8 @@ const livereloadServer = livereload({
 
 watch([
   Object.assign({}, defaults, {
-    entry: 'src/node-server/plinko/browser.js',
-    dest: 'lib/node-server/plinko/browser.js',
+    entry: 'src/browser/canvas-websocket/index.js',
+    dest: 'lib/browser/canvas-websocket.js',
     moduleName: 'NodeServerBrowserPlinko',
     plugins: defaults.plugins.concat([
       livereloadServer,
@@ -24,8 +24,8 @@ watch([
     ])
   }),
   {
-    entry: 'src/node-server/plinko/server.js',
-    dest: 'lib/node-server/plinko/server.js',
+    entry: 'src/node/canvas-websocket/index.js',
+    dest: 'lib/node/canvas-websocket.js',
     moduleName: 'NodeServerNodePlinko',
     format: 'cjs',
     plugins: [

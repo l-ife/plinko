@@ -22,7 +22,7 @@ let port = 8080;
 const sessionId = uuid(16);
 
 const theBookFilePath = pathJoin(writeDirPath, `${sessionId}-BoP.csv`);
-console.log(`Writing to ${theBookFilePath}`);
+// console.log(`Writing to ${theBookFilePath}`);
 let { write: writeToTheBook } = setupCsvWriter(theBookFilePath);
 writeToTheBook(theBookOfPlinkoersHeaders);
 
@@ -44,9 +44,7 @@ const startWSServer = () => {
             }
         };
       });
-      ws.on('error', error => {
-        console.log('error', error);
-      });
+      ws.on('error', error => console.error('error', error));
     });
 }
 startWSServer();
@@ -77,11 +75,9 @@ const stepLogicHandlers = {
     beforeKillBall
 };
 
-
 const setupCanvasAndDrawHandlers = () => {
     let longLivedCanvas = new Canvas(plinkoWidth, plinkoHeight);
     let ctx = longLivedCanvas.getContext('2d');
-    // longLivedCanvas.jpegStream().pipe(process.stdout);
 
     return {
         longLivedCanvas,
@@ -115,17 +111,37 @@ const stepLogicHandlersWithDrawingHandlers = Object.assign({}, stepLogicHandlers
     drawPeg
 });
 
+var stream = require('stream');
+
+// Initiate the source
+var bufferStream = new stream.PassThrough();
+bufferStream.pipe(process.stdout);
+
+const ticksPerFrame = 100;
+let tickStep = 0;
+
 setInterval(() => {
     Events.trigger(engine, 'tick', { timestamp: engine.timing.timestamp });
     Engine.update(engine, engine.timing.delta);
     Events.trigger(engine, 'afterTick', { timestamp: engine.timing.timestamp });
-    if (frameRequestCallback) {
+    tickStep++;
+    if (frameRequestCallback || (tickStep === ticksPerFrame)) {
         frameReset();
         stepLogic(Object.assign({}, stepLogicHandlersWithDrawingHandlers, {
-            afterCycle: () => {
-                const dataUrl = longLivedCanvas.toDataURL();
-                frameRequestCallback(dataUrl);
-                frameRequestCallback = null;
+            afterCycle() {
+                if (frameRequestCallback) {
+                    const dataUrl = longLivedCanvas.toDataURL();
+                    
+                    frameRequestCallback(dataUrl);
+                    frameRequestCallback = null;
+                }
+                if (tickStep === ticksPerFrame) {
+                    longLivedCanvas.toBuffer(function(err, buff) {
+                        if (!err) return bufferStream.write(buff);
+                        console.error(err);
+                    });
+                    tickStep = 0;
+                }
             }
         }));
     } else {

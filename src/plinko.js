@@ -90,7 +90,7 @@ const stepLogic = ({ beforeKillBall, afterCycle, drawBall, drawPeg }) => {
 
             if (y > plinkoHeight * 1.3) {
                 killBall({ ball: n, beforeKillBall }, TYPES_OF_BIRTH_AND_DEATH.DEATH.FELL_OFF_BOTTOM);
-                if (Math.random() > 0.50 && getBallAgeSurvivalFactor() > 0.50) {
+                if (Math.random() > 0.125 && getBallAgeSurvivalFactor() > 0.50) {
                     spawnBall(n, TYPES_OF_BIRTH_AND_DEATH.BIRTH.LOOPED_AROUND);
                 }
             } else if (Math.random() > 0.995 && getBallAgeSurvivalFactor() > 0.55) {
@@ -117,24 +117,24 @@ const setup = ({ beforeKillBall } = {}) => {
     engine = Engine.create();
     beginTime = getTime();
     trailingData = TrailingData({ age: 3000 });
-    // theBest = SortedLimitedBuffer(100);
+    // theBest = SortedBuffer(100);
 
-    Events.on(engine, "collisionStart", ({ pairs, timestamp, source, name }) => {
-        pairs.forEach(({ bodyA, bodyB }) => {
-            if (
-                (bodyA.label === 'ball' && bodyB.label === 'ball') &&
-                (bodyA.genome.ancestry !== bodyB.genome.ancestry)
-            ) {
-                if (bodyA.speed > bodyB.speed && bodyA.genome.ballRadius > 7) {
-                    killBall({ ball: bodyB, beforeKillBall }, TYPES_OF_BIRTH_AND_DEATH.DEATH.EATEN);
-                    bodyA.genome.ate++;
-                } else if (bodyB.speed > bodyA.speed && bodyB.genome.ballRadius > 7) {
-                    killBall({ ball: bodyA, beforeKillBall }, TYPES_OF_BIRTH_AND_DEATH.DEATH.EATEN);
-                    bodyB.genome.ate++;
-                }
-            }
-        })
-    });
+    // Events.on(engine, "collisionStart", ({ pairs, timestamp, source, name }) => {
+    //     pairs.forEach(({ bodyA, bodyB }) => {
+    //         if (
+    //             (bodyA.label === 'ball' && bodyB.label === 'ball') &&
+    //             (bodyA.genome.ancestry !== bodyB.genome.ancestry)
+    //         ) {
+    //             if (bodyA.speed > bodyB.speed && bodyA.genome.ballRadius > 7) {
+    //                 killBall({ ball: bodyB, beforeKillBall }, TYPES_OF_BIRTH_AND_DEATH.DEATH.EATEN);
+    //                 bodyA.genome.ate++;
+    //             } else if (bodyB.speed > bodyA.speed && bodyB.genome.ballRadius > 7) {
+    //                 killBall({ ball: bodyA, beforeKillBall }, TYPES_OF_BIRTH_AND_DEATH.DEATH.EATEN);
+    //                 bodyB.genome.ate++;
+    //             }
+    //         }
+    //     })
+    // });
 
     let offsetX = 0.5 / countX * plinkoWidth;
     let offsetY = 0.5 / countY * plinkoHeight + 50;
@@ -190,7 +190,7 @@ function mutate({ parentValue, bounds, magnitude, rate, defaultVal }) {
     return bounds(parentValue + mutation);
 }
 
-const SortedLimitedBuffer = (bufferLength) => {
+const SortedBuffer = (bufferLength) => {
     let objects = {};
     let valueBuffer = [];
 

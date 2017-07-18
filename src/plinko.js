@@ -1,6 +1,8 @@
 import { uuid } from './utils';
 import TrailingData from './trailing-data';
 
+import Alea from 'alea';
+
 let pegSize = 14;
 let defaultBallRadius = 6;
 
@@ -14,6 +16,8 @@ const oldAge = 75000;
 
 import Matter from 'matter-js/build/matter';
 const { Bodies, Body, Composite, Engine, Events, Render, World } = Matter;
+
+let random;
 
 const TYPES_OF_BIRTH_AND_DEATH = {
     BIRTH: {
@@ -59,7 +63,7 @@ const ballAgeSurvivalFactor = (ballAge, randomFactorRange = 0.5) => {
     const ageFactor = ((ballAge - average)/ageStepFactor);
     const randomFactor = (
         (randomFactorRange/2) +
-        (Math.random()*randomFactorRange)
+        (random()*randomFactorRange)
     );
     return (randomFactor + (ageFactor - 1));
 };
@@ -68,11 +72,15 @@ const stepLogic = ({ beforeKillBall, afterCycle, drawBall, drawPeg }) => {
     let bodies = Composite.allBodies(engine.world);
 
     const now = getTime();
-    const baselineCount = 600;
-    const numOfBalls = bodies.length - numOfPegs;
+    const baselineCount = 175;
+    const phaseStartNumOfBalls = bodies.length - numOfPegs;
+    let numOfBalls = phaseStartNumOfBalls;
     let ballsNeeded = Math.max(baselineCount - numOfBalls, 0)/1000;
     for (; ballsNeeded > 0; ballsNeeded--) {
-        spawnBall(undefined, TYPES_OF_BIRTH_AND_DEATH.BIRTH.REBIRTH_FROM_THE_ANCIENTS);
+        if (random() < 0.005*100) {
+            spawnBall(undefined, TYPES_OF_BIRTH_AND_DEATH.BIRTH.REBIRTH_FROM_THE_ANCIENTS);
+            numOfBalls++;
+        }
     }
 
     bodies.forEach((n, i) => {
@@ -83,25 +91,30 @@ const stepLogic = ({ beforeKillBall, afterCycle, drawBall, drawPeg }) => {
             const getBallAgeSurvivalFactor = (randomFactorRange) => {
                 return ballAgeSurvivalFactor(ballAge, randomFactorRange);
             };
-            if (bodies.length > 1000 && getBallAgeSurvivalFactor() < 0.50) {
+            if (phaseStartNumOfBalls > 300 && getBallAgeSurvivalFactor() < 0.50) {
                 killBall({ ball: n, beforeKillBall }, TYPES_OF_BIRTH_AND_DEATH.DEATH.DIEOFF);
+                numOfBalls--;
                 return;
             }
 
             if (y > plinkoHeight * 1.3) {
                 killBall({ ball: n, beforeKillBall }, TYPES_OF_BIRTH_AND_DEATH.DEATH.FELL_OFF_BOTTOM);
-                if (Math.random() > 0.125 && getBallAgeSurvivalFactor() > 0.50) {
+                numOfBalls--;
+                if (random() > 0.125 && getBallAgeSurvivalFactor() > 0.50) {
                     spawnBall(n, TYPES_OF_BIRTH_AND_DEATH.BIRTH.LOOPED_AROUND);
+                    numOfBalls++;
                 }
-            } else if (Math.random() > 0.995 && getBallAgeSurvivalFactor() > 0.55) {
+            } else if (random() > 0.995 && getBallAgeSurvivalFactor() > 0.55) {
                 let i = n.genome.midstreamBirthrate;
                 while (i >= 1) {
                     spawnBall(n, TYPES_OF_BIRTH_AND_DEATH.BIRTH.MIDSTREAM_SPAWN);
+                    numOfBalls++;
                     n.genome.midstreamChildren++;
                     i--;
                 }
-                if (i > Math.random()) {
+                if (i > random()) {
                     spawnBall(n, TYPES_OF_BIRTH_AND_DEATH.BIRTH.MIDSTREAM_SPAWN);
+                    numOfBalls++;
                     n.genome.midstreamChildren++;
                 }
             }
@@ -110,31 +123,32 @@ const stepLogic = ({ beforeKillBall, afterCycle, drawBall, drawPeg }) => {
             drawPeg && drawPeg({ peg: n });
         }
     });
-    afterCycle && afterCycle();
+    afterCycle && afterCycle({ numOfBalls });
 }
 
-const setup = ({ beforeKillBall } = {}) => {
+const setup = ({ sessionId, beforeKillBall } = {}) => {
+    random = new Alea(sessionId);
     engine = Engine.create();
     beginTime = getTime();
     trailingData = TrailingData({ age: 3000 });
     // theBest = SortedBuffer(100);
 
-    // Events.on(engine, "collisionStart", ({ pairs, timestamp, source, name }) => {
-    //     pairs.forEach(({ bodyA, bodyB }) => {
-    //         if (
-    //             (bodyA.label === 'ball' && bodyB.label === 'ball') &&
-    //             (bodyA.genome.ancestry !== bodyB.genome.ancestry)
-    //         ) {
-    //             if (bodyA.speed > bodyB.speed && bodyA.genome.ballRadius > 7) {
-    //                 killBall({ ball: bodyB, beforeKillBall }, TYPES_OF_BIRTH_AND_DEATH.DEATH.EATEN);
-    //                 bodyA.genome.ate++;
-    //             } else if (bodyB.speed > bodyA.speed && bodyB.genome.ballRadius > 7) {
-    //                 killBall({ ball: bodyA, beforeKillBall }, TYPES_OF_BIRTH_AND_DEATH.DEATH.EATEN);
-    //                 bodyB.genome.ate++;
-    //             }
-    //         }
-    //     })
-    // });
+    Events.on(engine, "collisionStart", ({ pairs, timestamp, source, name }) => {
+        pairs.forEach(({ bodyA, bodyB }) => {
+            if (
+                (bodyA.label === 'ball' && bodyB.label === 'ball') &&
+                (bodyA.genome.ancestry !== bodyB.genome.ancestry)
+            ) {
+                if (bodyA.genome.ballRadius < bodyB.genome.ballRadius) {
+                    killBall({ ball: bodyB, beforeKillBall }, TYPES_OF_BIRTH_AND_DEATH.DEATH.EATEN);
+                    bodyA.genome.ate++;
+                } else if (bodyB.genome.ballRadius < bodyA.genome.ballRadius) {
+                    killBall({ ball: bodyA, beforeKillBall }, TYPES_OF_BIRTH_AND_DEATH.DEATH.EATEN);
+                    bodyB.genome.ate++;
+                }
+            }
+        })
+    });
 
     let offsetX = 0.5 / countX * plinkoWidth;
     let offsetY = 0.5 / countY * plinkoHeight + 50;
@@ -184,7 +198,7 @@ function mutate({ parentValue, bounds, magnitude, rate, defaultVal }) {
     }
 
     const mutation = (
-        ((Math.random()*magnitude * 2) - magnitude) * rate
+        ((random()*magnitude * 2) - magnitude) * rate
     );
 
     return bounds(parentValue + mutation);
@@ -215,7 +229,7 @@ const SortedBuffer = (bufferLength) => {
         },
         getRandomBest() {
             if (valueBuffer.length === 0) return;
-            return valueBuffer[parseInt(Math.random()*valueBuffer.length)];
+            return valueBuffer[parseInt(random()*valueBuffer.length)];
         },
         getTheBest() {
             if (valueBuffer.length === 0) return;
@@ -239,7 +253,7 @@ function killBall({ ball, beforeKillBall }, deathType) {
 }
 
 function spawnBall(parent = { genome: { mutationRates: {} } }, birthType) {
-    const ancestry = parent.genome.ancestry || uuid(4);
+    const ancestry = parent.genome.ancestry || uuid({ length: 4, rng: random });
     const mutationRates = {
         ballRadius: mutate({
             parentValue: parent.genome.mutationRates.ballRadius,
@@ -278,21 +292,21 @@ function spawnBall(parent = { genome: { mutationRates: {} } }, birthType) {
         bounds: bounds(-0.1, 1.1),
         magnitude: 0.1,
         rate: mutationRates.position,
-        defaultVal: Math.random()*(0.9-0.1)+0.1
+        defaultVal: random()*(0.9-0.1)+0.1
     });
     const ballRadius = mutate({
         parentValue: parent.genome.ballRadius,
-        bounds: bounds(0.01, 55),
+        bounds: bounds(0.01, 50),
         magnitude: 0.5,
         rate: mutationRates.ballRadius,
-        defaultVal: defaultBallRadius
+        defaultVal: random()*50
     });
     const hue = mutate({
         parentValue: parent.genome.hue,
         bounds: bounds(0, 255),
         magnitude: 5,
         rate: 1,
-        defaultVal: Math.random()*255
+        defaultVal: random()*255
     });
     const restitution = mutate({
         parentValue: parent.genome.restitution,
@@ -306,7 +320,7 @@ function spawnBall(parent = { genome: { mutationRates: {} } }, birthType) {
         bounds: bounds(0, 1),
         magnitude: 0.25,
         rate: mutationRates.midstreamBirthrate,
-        defaultVal: 1
+        defaultVal: random()
     });
     const generation = (parent.genome.generation + 1) || 0;
     addCircle({

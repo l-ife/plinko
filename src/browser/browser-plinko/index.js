@@ -1,4 +1,5 @@
 import { uuid } from '../../utils';
+import { getUrlArguments } from '../browser-utils';
 import { BookOfPlinkoers } from '../../logging-utils';
 import { saveToDisk, startPeriodicCsvBackup } from '../logging-utils';
 
@@ -11,7 +12,10 @@ const { setup, stepLogic, utils: { getTime, ballAgeSurvivalFactor, getAverageMin
 let engine;
 let beginTime;
 
-const sessionId = uuid(16);
+const { seed } = getUrlArguments();
+
+const sessionId = seed || uuid({ length: 16 });
+console.log(sessionId);
 
 let bookOfPlinkoers = BookOfPlinkoers();
 
@@ -46,7 +50,7 @@ const stepLogicHandlers = {
 };
 
 window.setup = () => {
-    ({ engine, beginTime } = setup({ beforeKillBall: stepLogicHandlers.beforeKillBall }));
+    ({ engine, beginTime } = setup({ sessionId, beforeKillBall: stepLogicHandlers.beforeKillBall }));
     Engine.run(engine);
 
     colorMode(HSB, 255);

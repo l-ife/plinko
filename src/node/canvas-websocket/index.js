@@ -7,7 +7,10 @@ const { Bodies, Body, Engine, Events, Render, World } = Matter;
 import plinko from '../../plinko';
 const { setup, stepLogic, utils: { getTime, getAverageMinMax }, consts: { plinkoWidth, plinkoHeight } } = plinko;
 
+const margins = 200;
+
 import { uuid } from '../../utils';
+import { getNextSafePath } from '../node-utils';
 
 import {
     theBookOfPlinkoersHeaders, ballToEntry
@@ -15,13 +18,20 @@ import {
 
 import { setupCsvWriter } from '../logging-utils';
 
-const [ node, file, writeDirPath = './data/' ] = process.argv;
+const [ node, file, seed, writeDirPath = './data' ] = process.argv;
 
 let port = 8080;
 
-const sessionId = uuid(16);
+let sessionId = seed || uuid({ length: 16 });
 
-const theBookFilePath = pathJoin(writeDirPath, `${sessionId}-BoP.csv`);
+const { path: theBookFilePath, justName } = getNextSafePath({
+    dirPath: writeDirPath,
+    fileName: sessionId,
+    extension: 'csv'
+});
+
+const filesName = justName;
+
 // console.log(`Writing to ${theBookFilePath}`);
 let { write: writeToTheBook } = setupCsvWriter(theBookFilePath);
 writeToTheBook(theBookOfPlinkoersHeaders);
@@ -51,7 +61,7 @@ startWSServer();
 
 
 const ellipse = (ctx, x, y, w) => {
-    ctx.save();  
+    ctx.save();
     ctx.beginPath();
     ctx.arc(x, y, w/2, 0, 2 * Math.PI);
     ctx.restore();
@@ -59,7 +69,7 @@ const ellipse = (ctx, x, y, w) => {
 
 const background = (ctx, color) => {
     ctx.save();
-    ctx.fillStyle = 'white';
+    ctx.fillStyle = color || 'white';
     ctx.fillRect(0, 0, longLivedCanvas.width, longLivedCanvas.height);
     ctx.restore();
 };
@@ -69,20 +79,20 @@ const beforeKillBall = (ball) => {
     writeToTheBook(ballToEntry(ball, now, beginTime));
 };
 
-let { engine, beginTime } = setup({ beforeKillBall });
+let { engine, beginTime } = setup({ sessionId, beforeKillBall });
 
 const stepLogicHandlers = {
     beforeKillBall
 };
 
 const setupCanvasAndDrawHandlers = () => {
-    let longLivedCanvas = new Canvas(plinkoWidth, plinkoHeight);
+    let longLivedCanvas = new Canvas(plinkoWidth + (2*margins), plinkoHeight + (2*margins));
     let ctx = longLivedCanvas.getContext('2d');
 
     return {
         longLivedCanvas,
         frameReset() {
-            background(ctx, 255);
+            background(ctx);
         },
         drawBall({ ball }) {
             const { render: { fillStyle }, position: { x, y }, circleRadius } = ball;
@@ -91,13 +101,13 @@ const setupCanvasAndDrawHandlers = () => {
             const { average } = getAverageMinMax();
             const dullness = ((ballAge > average) ? 0.4 : 1) * 255;
             ctx.fillStyle = `hsl(${fillStyle[0]},100%,50%)`;
-            ellipse(ctx, x, y, circleRadius * 2);
+            ellipse(ctx, margins+x, margins+y, circleRadius * 2);
             ctx.fill();
         },
         drawPeg({ peg }) {
             const { position: { x, y }, circleRadius } = peg;
             ctx.fillStyle = 'rgb(240,240,240)';
-            ellipse(ctx, x, y, circleRadius * 2);
+            ellipse(ctx, margins+x, margins+y, circleRadius * 2);
             ctx.fill();
         }
     };
@@ -111,13 +121,24 @@ const stepLogicHandlersWithDrawingHandlers = Object.assign({}, stepLogicHandlers
     drawPeg
 });
 
-var stream = require('stream');
+const { spawn } = require('child_process');
+
+let child = spawn('node', ['./lib/node/canvas-video-streamer.js'], { env: Object.assign(process.env, { filesName })});
+child.on('error', err => console.error(err));
+child.stdout.pipe(process.stdout);
+child.stderr.pipe(process.stderr);
+
+let ffplay = spawn('ffplay', ['-window_title', filesName, '-'], { stdio: ['pipe', 'ignore', 'ignore'] });
+ffplay.on('error', err => console.error(err));
+
+const stream = require('stream');
 
 // Initiate the source
-var bufferStream = new stream.PassThrough();
-bufferStream.pipe(process.stdout);
+let bufferStream = new stream.PassThrough();
+bufferStream.pipe(child.stdin);
+bufferStream.pipe(ffplay.stdin);
 
-const ticksPerFrame = 100;
+const ticksPerFrame = 50;
 let tickStep = 0;
 
 setInterval(() => {
@@ -131,7 +152,7 @@ setInterval(() => {
             afterCycle() {
                 if (frameRequestCallback) {
                     const dataUrl = longLivedCanvas.toDataURL();
-                    
+
                     frameRequestCallback(dataUrl);
                     frameRequestCallback = null;
                 }

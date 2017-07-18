@@ -13,10 +13,11 @@ const makeValidCharMap = () => {
 
 const charMap = makeValidCharMap();
 
-export const uuid = (length) => {
+export const uuid = ({ length, rng }) => {
+    if(!rng) rng = Math.random;
     let theReturn = [];
     for (var i = 0; i < length; i++) {
-        const num = Math.floor(Math.random() * charMap.length);
+        const num = Math.floor(rng() * charMap.length);
         theReturn.push(String.fromCharCode(charMap[num]));
     }
     return theReturn.join('');

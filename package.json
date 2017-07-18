@@ -4,11 +4,13 @@
   "main": "index.js",
   "license": "MIT",
   "scripts": {
-    "preinstall": "brew install pkg-config cairo pango libpng jpeg giflib",
+    "brew": "brew install pkg-config cairo pango libpng jpeg giflib && brew install ffmpeg --with-ffplay",
     "dev": "node rollup.build.js"
   },
   "dependencies": {
+    "alea": "^0.0.9",
     "canvas": "^1.6.5",
+    "fluent-ffmpeg": "^2.1.2",
     "lodash": "^4.17.4",
     "matter-js": "^0.12.0",
     "p5": "^0.5.10",

@@ -3,23 +3,27 @@ const { join: pathJoin } = require('path');
 import Matter from 'matter-js/build/matter';
 const { Bodies, Body, Engine, Events, Render, World } = Matter;
 
-import plinko from '../plinko';
+import plinko from '../../plinko';
 const { setup, stepLogic, utils: { getTime } } = plinko;
 
-import { uuid } from '../utils';
+import { uuid } from '../../utils';
+import { getNextSafePath } from '../node-utils';
 
 import {
     theBookOfPlinkoersHeaders, ballToEntry
-} from '../logging-utils';
+} from '../../logging-utils';
 
-import { setupCsvWriter } from './logging-utils';
+import { setupCsvWriter } from '../logging-utils';
 
+const [ node, file, seed, writeDirPath = './data' ] = process.argv;
 
-const [ node, file, writeDirPath = './data/' ] = process.argv;
+const sessionId = seed || uuid({ length: 16 });
 
-const sessionId = uuid(16);
-
-const theBookFilePath = pathJoin(writeDirPath, `${sessionId}-BoP.csv`);
+const { path: theBookFilePath } = getNextSafePath({
+    dirPath: writeDirPath,
+    fileName: sessionId,
+    extension: 'csv'
+});
 
 console.log(`Writing to ${theBookFilePath}`);
 
@@ -32,7 +36,7 @@ const beforeKillBall = (ball) => {
     writeToTheBook(ballToEntry(ball, now, beginTime));
 };
 
-let { engine, beginTime } = setup({ beforeKillBall });
+let { engine, beginTime } = setup({ sessionId, beforeKillBall });
 
 const stepLogicHandlers = {
     beforeKillBall

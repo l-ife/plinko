@@ -9,7 +9,7 @@ const nodeGlobals = require('rollup-plugin-node-globals');
 
 const livereloadServer = livereload({
     watch: 'src/node-server/plinko/',
-    port: 35732
+    port: 35733
 });
 
 watch([
@@ -27,6 +27,18 @@ watch([
     entry: 'src/node/canvas-websocket/index.js',
     dest: 'lib/node/canvas-websocket.js',
     moduleName: 'NodeServerNodePlinko',
+    format: 'cjs',
+    plugins: [
+      commonjs(),
+      babel({
+        exclude: ['node_modules/**', 'data/**']
+      })
+    ]
+  },
+  {
+    entry: 'src/node/canvas-websocket/video-streamer.js',
+    dest: 'lib/node/canvas-video-streamer.js',
+    moduleName: 'ChildProcessVideoStreamer',
     format: 'cjs',
     plugins: [
       commonjs(),

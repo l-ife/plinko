@@ -6,16 +6,19 @@ import Alea from 'alea';
 let pegSize = 14;
 let defaultBallRadius = 6;
 
-let plinkoWidth = 750;
+let plinkoWidth = 750;//*1.5;
 let plinkoHeight = 1800;
-let countX = 10;
-let countY = 20;
+let countX = 20;//*1.5;
+let countY = 2;//24;
 let numOfPegs = 0;
 
 const oldAge = 75000;
 
 import Matter from 'matter-js/build/matter';
 const { Bodies, Body, Composite, Engine, Events, Render, World } = Matter;
+
+import { makeNewBeingGenome, makeChildGenome } from './genome';
+import { getNewBeingData } from './data';
 
 let random;
 
@@ -25,12 +28,17 @@ const TYPES_OF_BIRTH_AND_DEATH = {
         LOOPED_AROUND: 1,
         LOOP_AROUND_SPLIT: 2,
         MIDSTREAM_SPAWN: 3,
-        REBIRTH_FROM_THE_ANCIENTS: 4
+        REBIRTH_FROM_THE_ANCIENTS: 4,
+        RESOURCE_CHILD: 5,
+        DYING_BREATH_BABY: 6,
     },
     DEATH: {
-        DIEOFF: 5,
-        FELL_OFF_BOTTOM: 6,
-        EATEN: 7
+        DIEOFF: 7,
+        FELL_OFF_BOTTOM: 8,
+        EATEN_BY_OTHER_SPECIES: 9,
+        EATEN_BY_OWN_SPECIES: 10,
+        OLD_AGE: 11,
+        BECAME_PEG: 12
     }
 };
 
@@ -68,30 +76,34 @@ const ballAgeSurvivalFactor = (ballAge, randomFactorRange = 0.5) => {
     return (randomFactor + (ageFactor - 1));
 };
 
-const stepLogic = ({ beforeKillBall, afterCycle, drawBall, drawPeg }) => {
+let numOfBallsLastCycle = 0;
+const stepLogic = ({ beforeKillBall, afterCycle, drawBall, drawCorpse, drawPeg, drawWall }) => {
     let bodies = Composite.allBodies(engine.world);
 
     const now = getTime();
     const baselineCount = 175;
-    const phaseStartNumOfBalls = bodies.length - numOfPegs;
-    let numOfBalls = phaseStartNumOfBalls;
-    let ballsNeeded = Math.max(baselineCount - numOfBalls, 0)/1000;
-    for (; ballsNeeded > 0; ballsNeeded--) {
-        if (random() < 0.005*100) {
-            spawnBall(undefined, TYPES_OF_BIRTH_AND_DEATH.BIRTH.REBIRTH_FROM_THE_ANCIENTS);
-            numOfBalls++;
-        }
-    }
+    let numOfBalls = 0;
 
     bodies.forEach((n, i) => {
         const { render: { visible }, position: { x, y }, label } = n;
         if(!visible) return;
         if (label === 'ball') {
-            const ballAge = (now - n.birthdate);
+            numOfBalls++;
+            const ballAge = (now - n.data.birthdate);
+            if (ballAge > n.genome.maxAge) {
+                if (n.data.energy > n.circleRadius && random() < 0.875) {
+                    n.data.energy -= n.circleRadius;
+                    spawnBall(n, TYPES_OF_BIRTH_AND_DEATH.BIRTH.DYING_BREATH_BABY);
+                    numOfBalls++;
+                }
+                killBall({ ball: n, beforeKillBall }, TYPES_OF_BIRTH_AND_DEATH.DEATH.OLD_AGE);
+                numOfBalls--;
+                return;
+            }
             const getBallAgeSurvivalFactor = (randomFactorRange) => {
                 return ballAgeSurvivalFactor(ballAge, randomFactorRange);
             };
-            if (phaseStartNumOfBalls > 300 && getBallAgeSurvivalFactor() < 0.50) {
+            if (numOfBallsLastCycle > 300 && getBallAgeSurvivalFactor() < 0.50) {
                 killBall({ ball: n, beforeKillBall }, TYPES_OF_BIRTH_AND_DEATH.DEATH.DIEOFF);
                 numOfBalls--;
                 return;
@@ -100,31 +112,72 @@ const stepLogic = ({ beforeKillBall, afterCycle, drawBall, drawPeg }) => {
             if (y > plinkoHeight * 1.3) {
                 killBall({ ball: n, beforeKillBall }, TYPES_OF_BIRTH_AND_DEATH.DEATH.FELL_OFF_BOTTOM);
                 numOfBalls--;
-                if (random() > 0.125 && getBallAgeSurvivalFactor() > 0.50) {
+                if (n.data.energy > n.circleRadius && random() < 0.875 /*&& getBallAgeSurvivalFactor() > 0.50*/) {
+                    n.data.energy -= n.circleRadius;
                     spawnBall(n, TYPES_OF_BIRTH_AND_DEATH.BIRTH.LOOPED_AROUND);
                     numOfBalls++;
                 }
-            } else if (random() > 0.995 && getBallAgeSurvivalFactor() > 0.55) {
+            } else if (random() < 0.05 && getBallAgeSurvivalFactor() > 0.55) {
                 let i = n.genome.midstreamBirthrate;
-                while (i >= 1) {
+                while (i >= 1 && n.data.energy > n.circleRadius) {
+                    n.data.energy -= n.circleRadius;
                     spawnBall(n, TYPES_OF_BIRTH_AND_DEATH.BIRTH.MIDSTREAM_SPAWN);
                     numOfBalls++;
-                    n.genome.midstreamChildren++;
+                    n.data.midstreamChildren++;
                     i--;
                 }
-                if (i > random()) {
+                if (random() < i && n.data.energy > n.circleRadius) {
+                    n.data.energy -= n.circleRadius;
                     spawnBall(n, TYPES_OF_BIRTH_AND_DEATH.BIRTH.MIDSTREAM_SPAWN);
                     numOfBalls++;
-                    n.genome.midstreamChildren++;
+                    n.data.midstreamChildren++;
                 }
             }
             drawBall && drawBall({ ball: n });
         } else if (label === 'peg') {
             drawPeg && drawPeg({ peg: n });
+        } else if (label === 'wall') {
+            drawWall && drawWall({ wall: n });
+        } else if (label === 'corpse') {
+            if (y > plinkoHeight * 1.3) {
+                removeBody(n);
+                return;
+            }
+            drawCorpse && drawCorpse({ corpse: n });
         }
     });
+
+    let ballsNeeded = Math.max(baselineCount - numOfBalls, 0);
+    for (; ballsNeeded > 0; ballsNeeded--) {
+        if (random() < 0.005*0.7) {
+            spawnBall(undefined, TYPES_OF_BIRTH_AND_DEATH.BIRTH.REBIRTH_FROM_THE_ANCIENTS);
+            numOfBalls++;
+        }
+    }
+
+    numOfBallsLastCycle = numOfBalls;
+
     afterCycle && afterCycle({ numOfBalls });
 }
+
+const getMurderAbility = (random, typeField, { eater, eaten }) => {
+    const typeFloat = eater.genome[typeField];
+    return true;
+};
+
+const cannibalismCheck = (random, { bodyA, bodyB }) => {
+    return {
+        aWantsToEat: (random() < bodyA.genome.cannibalismRate) && getMurderAbility(random, 'cannibalismType', { eater: bodyA, eater: bodyB }),
+        bWantsToEat: (random() < bodyB.genome.cannibalismRate) && getMurderAbility(random, 'cannibalismType', { eater: bodyB, eater: bodyA })
+    };
+};
+
+const carnivorismCheck = (random, { bodyA, bodyB }) => {
+    return {
+        aWantsToEat: (random() < bodyA.genome.carnivorismRate) && getMurderAbility(random, 'carnivorismType', { eater: bodyA, eater: bodyB }),
+        bWantsToEat: (random() < bodyB.genome.carnivorismRate) && getMurderAbility(random, 'carnivorismType', { eater: bodyB, eater: bodyA })
+    };
+};
 
 const setup = ({ sessionId, beforeKillBall } = {}) => {
     random = new Alea(sessionId);
@@ -133,40 +186,90 @@ const setup = ({ sessionId, beforeKillBall } = {}) => {
     trailingData = TrailingData({ age: 3000 });
     // theBest = SortedBuffer(100);
 
-    Events.on(engine, "collisionStart", ({ pairs, timestamp, source, name }) => {
+    const pegEaterEnergy = 1750;
+
+    Events.on(engine, "collisionStart", ({ pairs, source : { timing: { timestamp: now } }, name }) => {
         pairs.forEach(({ bodyA, bodyB }) => {
-            if (
-                (bodyA.label === 'ball' && bodyB.label === 'ball') &&
-                (bodyA.genome.ancestry !== bodyB.genome.ancestry)
+            if (bodyA.label === 'ball' && bodyB.label === 'ball') {
+                if ((now - bodyA.data.birthdate) > 300 && (now - bodyB.data.birthdate) > 300) {
+                    const areSameSpecies = (bodyA.genome.ancestry === bodyB.genome.ancestry);
+                    const deathType = TYPES_OF_BIRTH_AND_DEATH.DEATH[areSameSpecies ? 'EATEN_BY_OWN_SPECIES' : 'EATEN_BY_OTHER_SPECIES'];
+                    const checkFunction = areSameSpecies ? cannibalismCheck : carnivorismCheck;
+                    const { aWantsToEat, bWantsToEat } = checkFunction(random, { bodyA, bodyB });
+                    const aEats = (
+                        (aWantsToEat && bWantsToEat && (random() < 0.5)) ||
+                        (aWantsToEat && !bWantsToEat)
+                    );
+                    const [ eater, eaten ] = aEats ? [ bodyA, bodyB ] : [ bodyB, bodyA ];
+                    const { circleRadius: consumedRadius, data: { energy: consumedEnergy } } = eaten;
+                    killBall({ ball: eaten, beforeKillBall }, deathType);
+                    eater.data.othersEaten++;
+                    eater.data.energy += (consumedRadius + consumedEnergy);
+                    eater.data.totalLifeEnergy += (consumedRadius + consumedEnergy);
+                    const { position: { y }, genome: { becomePegRate } } = eater;
+                    if (eater.data.energy > pegEaterEnergy && y > 0.2 && random() < becomePegRate) {
+                        killBall({ ball: eater, beforeKillBall }, TYPES_OF_BIRTH_AND_DEATH.DEATH.BECAME_PEG);
+                    }
+                }
+            } else if (
+                (bodyA.label === 'corpse' && bodyB.label === 'ball') ||
+                (bodyB.label === 'corpse' && bodyA.label === 'ball')
             ) {
-                if (bodyA.genome.ballRadius < bodyB.genome.ballRadius) {
-                    killBall({ ball: bodyB, beforeKillBall }, TYPES_OF_BIRTH_AND_DEATH.DEATH.EATEN);
-                    bodyA.genome.ate++;
-                } else if (bodyB.genome.ballRadius < bodyA.genome.ballRadius) {
-                    killBall({ ball: bodyA, beforeKillBall }, TYPES_OF_BIRTH_AND_DEATH.DEATH.EATEN);
-                    bodyB.genome.ate++;
+                const [ theBall, theCorpse ] = (bodyA.label === 'ball') ? [ bodyA, bodyB ] : [ bodyB, bodyA ];
+                const { circleRadius: consumedRadius, data: { energy: consumedEnergy } } = theCorpse;
+                theBall.data.energy += (consumedRadius + consumedEnergy);
+                theBall.data.totalLifeEnergy += (consumedRadius + consumedEnergy);
+                removeBody(theCorpse);
+            } else if (
+                (bodyA.label === 'peg' && bodyB.label === 'ball') ||
+                (bodyB.label === 'peg' && bodyA.label === 'ball')
+            ) {
+                const [ theBall, thePeg ] = (bodyA.label === 'ball') ? [ bodyA, bodyB ] : [ bodyB, bodyA ];
+                if (theBall.data.energy > pegEaterEnergy && random() < theBall.genome.eatPegRate) {
+                    removeBody(thePeg);
+                    theBall.data.energy -= pegEaterEnergy;
+                    theBall.data.pegsEaten++;
                 }
             }
         })
     });
 
-    let offsetX = 0.5 / countX * plinkoWidth;
-    let offsetY = 0.5 / countY * plinkoHeight + 50;
+    // let offsetX = 0.5 / countX * plinkoWidth;
+    // let offsetY = 0.5 / countY * plinkoHeight + 50;
 
-    for(let y = 0; y < countY; y++) {
-        for(let x = 0; x < countX - y % 2 ? -1 : 0; x++) {
-            numOfPegs++;
-            addCircle({
-                x: x / countX * plinkoWidth + offsetX * (!(y % 2) ? 1 : 2),
-                y: y / countY * plinkoHeight * (2 / 3) + offsetY,
-                r: pegSize,
-                options: {
-                    isStatic: true,
-                    label: 'peg'
-                }
-            });
-        }
-    }
+    // for(let y = 0; y < countY; y++) {
+    //     for(let x = 0; x < countX - y % 2 ? -1 : 0; x++) {
+    //         numOfPegs++;
+    //         addCircle({
+    //             x: x / countX * plinkoWidth + offsetX * (!(y % 2) ? 1 : 2),
+    //             y: y / countY * plinkoHeight * (2 / 3) + offsetY,
+    //             r: pegSize,
+    //             options: {
+    //                 isStatic: true,
+    //                 label: 'peg'
+    //             }
+    //         });
+    //     }
+    // }
+    const boxWidth = plinkoWidth*3;
+    const boxBottom = plinkoHeight-450;
+    const boxHeight = 400;
+    const wallThickness = 10;
+    const centerX = (plinkoWidth/2);
+    const leftX = centerX-(boxWidth/2);
+    const rightX = centerX+(boxWidth/2);
+    addRectangle({
+        x: centerX, y: boxBottom, w: boxWidth, h: wallThickness,
+        options: { isStatic: true, label: 'wall' }
+    });
+    addRectangle({
+        x: leftX, y: boxBottom-(boxHeight/2), w: wallThickness, h: boxHeight,
+        options: { isStatic: true, label: 'wall' }
+    });
+    addRectangle({
+        x: rightX, y: boxBottom-(boxHeight/2), w: wallThickness, h: boxHeight,
+        options: { isStatic: true, label: 'wall' }
+    });
 
     return {
         engine,
@@ -188,20 +291,10 @@ function addCircle({ x = 0, y = 0, r = 10, options = {} } = {}) {
     return body;
 }
 
-function bounds(min, max) {
-    return number => Math.min(Math.max(number, min), max);
-}
-
-function mutate({ parentValue, bounds, magnitude, rate, defaultVal }) {
-    if (parentValue === undefined) {
-        return defaultVal;
-    }
-
-    const mutation = (
-        ((random()*magnitude * 2) - magnitude) * rate
-    );
-
-    return bounds(parentValue + mutation);
+function addRectangle({ x = 0, y = 0, w = 10, h = 10, options = {} } = {}) {
+    let body = Bodies.rectangle(x, y, w, h, options);
+    addBody(body);
+    return body;
 }
 
 const SortedBuffer = (bufferLength) => {
@@ -238,120 +331,67 @@ const SortedBuffer = (bufferLength) => {
     };
 }
 
-function killBall({ ball, beforeKillBall }, deathType) {
-    if (beforeKillBall) {
-        const { position: { x, y } } = ball;
-        ball.genome.deathPositionX = x/plinkoWidth;
-        ball.genome.deathPositionY = y/plinkoHeight;
-        ball.genome.deathType = deathType;
-        beforeKillBall && beforeKillBall(ball);
-    }
-    const ballAge = (getTime(engine) - ball.birthdate);
-    // theBest.potentiallyInsert(ball, ballAge);
-    trailingData.addPoint('age', ballAge);
-    removeBody(ball);
+function convertToCorpse(ball) {
+    const { data: { energy } } = ball;
+    // TODO: Write this for perfomrance
+    ball.label = 'corpse';
+    ball.restitution = 0.95;
+    ball.render.fillStyle = undefined;
+    ball.genome = undefined;
+    ball.data = { energy };
 }
 
-function spawnBall(parent = { genome: { mutationRates: {} } }, birthType) {
-    const ancestry = parent.genome.ancestry || uuid({ length: 4, rng: random });
-    const mutationRates = {
-        ballRadius: mutate({
-            parentValue: parent.genome.mutationRates.ballRadius,
-            bounds: bounds(0, 1),
-            magnitude: 0.05,
-            rate: 1,
-            defaultVal: 1
-        }),
-        position: mutate({
-            parentValue: parent.genome.mutationRates.position,
-            bounds: bounds(0, 1),
-            magnitude: 0.05,
-            rate: 1,
-            defaultVal: 1
-        }),
-        restitution: mutate({
-            parentValue: parent.genome.mutationRates.restitution,
-            bounds: bounds(0, 1),
-            magnitude: 0.05,
-            rate: 1,
-            defaultVal: 1
-        }),
-        midstreamBirthrate: mutate({
-            parentValue: parent.genome.mutationRates.midstreamBirthrate,
-            bounds: bounds(0, 1),
-            magnitude: 0.05,
-            rate: 1,
-            defaultVal: 1
-        })
-    };
-    // TODO: position max
-    // TODO: position min
-    // TODO: make these objects an array and loop over and pass in parent.genome
-    const position = mutate({
-        parentValue: parent.genome.position,
-        bounds: bounds(-0.1, 1.1),
-        magnitude: 0.1,
-        rate: mutationRates.position,
-        defaultVal: random()*(0.9-0.1)+0.1
-    });
-    const ballRadius = mutate({
-        parentValue: parent.genome.ballRadius,
-        bounds: bounds(0.01, 50),
-        magnitude: 0.5,
-        rate: mutationRates.ballRadius,
-        defaultVal: random()*50
-    });
-    const hue = mutate({
-        parentValue: parent.genome.hue,
-        bounds: bounds(0, 255),
-        magnitude: 5,
-        rate: 1,
-        defaultVal: random()*255
-    });
-    const restitution = mutate({
-        parentValue: parent.genome.restitution,
-        bounds: bounds(0, 1),
-        magnitude: 0.05,
-        rate: mutationRates.restitution,
-        defaultVal: 0.75
-    });
-    const midstreamBirthrate = mutate({
-        parentValue: parent.genome.midstreamBirthrate,
-        bounds: bounds(0, 1),
-        magnitude: 0.25,
-        rate: mutationRates.midstreamBirthrate,
-        defaultVal: random()
-    });
-    const generation = (parent.genome.generation + 1) || 0;
+function convertToPeg(ball) {
+    const { circleRadius } = ball;
+    ball.label = 'peg';
+    ball.render.fillStyle = undefined;
+    ball.genome = undefined;
+    ball.data = undefined;
+    const scaleFactor = pegSize/circleRadius;
+    Body.scale(ball, scaleFactor, scaleFactor);
+    Body.setStatic(ball, true);
+}
+
+function killBall({ ball, beforeKillBall }, deathType) {
+    if (beforeKillBall) {
+        ball.data.deathType = deathType;
+        beforeKillBall && beforeKillBall(ball);
+    }
+    const ballAge = (getTime(engine) - ball.data.birthdate);
+    // theBest.potentiallyInsert(ball, ballAge);
+    trailingData.addPoint('age', ballAge);
+    switch (deathType) {
+        case TYPES_OF_BIRTH_AND_DEATH.DEATH.FELL_OFF_BOTTOM:
+        case TYPES_OF_BIRTH_AND_DEATH.DEATH.EATEN_BY_OTHER_SPECIES:
+        case TYPES_OF_BIRTH_AND_DEATH.DEATH.EATEN_BY_OWN_SPECIES:
+            removeBody(ball);
+            break;
+        case TYPES_OF_BIRTH_AND_DEATH.DEATH.BECAME_PEG:
+            convertToPeg(ball);
+            break;
+        default:
+            convertToCorpse(ball);
+    }
+}
+
+function spawnBall(parent, birthType, { xOveride, yOveride } = {}) {
+    const genome = ( parent ? makeChildGenome(parent, random) : makeNewBeingGenome(random) );
+    const { ballRadius, hue, position, restitution } = genome;
     addCircle({
-        x: plinkoWidth * position,
-        y: -10,
+        x: xOveride || (plinkoWidth * position),
+        y: yOveride || -10,
         r: ballRadius,
         options: {
-            genome: {
-                ballRadius,
-                position,
-                hue,
-                mutationRates,
-                restitution,
-                midstreamBirthrate,
-                generation,
-                ancestry,
-                birthType,
-                midstreamChildren: 0,
-                ate: 0
-            },
-            birthdate: getTime(),
-            restitution,
-            // torque: random(-0.05, 0.05),
             label: 'ball',
-            render: {
-                fillStyle: [
-                    hue,
-                    255,
-                    255
-                ]
-            }
+            render: { fillStyle: [ hue, 255, 255 ] },
+            restitution,
+            genome,
+            data: getNewBeingData({
+                parent,
+                now: getTime(),
+                beginTime,
+                birthType
+            }),
         }
     });
 }
@@ -360,7 +400,6 @@ export default {
     setup,
     stepLogic,
     utils: {
-        mutate,
         getTime,
         ballAgeSurvivalFactor,
         getAverageMinMax

@@ -7,7 +7,11 @@ const { Bodies, Body, Engine, Events, Render, World } = Matter;
 import plinko from '../../plinko';
 const { setup, stepLogic, utils: { getTime, getAverageMinMax }, consts: { plinkoWidth, plinkoHeight } } = plinko;
 
-const margins = 200;
+const margins = {
+    x: plinkoWidth*1.5,
+    top: 200,
+    bottom: 0
+};
 
 import { uuid } from '../../utils';
 import { getNextSafePath } from '../node-utils';
@@ -67,6 +71,15 @@ const ellipse = (ctx, x, y, w) => {
     ctx.restore();
 };
 
+const quad = (ctx, [[x1,y1],[x2,y2],[x3,y3],[x4,y4]]) => {
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.lineTo(x3, y3);
+    ctx.lineTo(x4, y4);
+    ctx.closePath();
+};
+
 const background = (ctx, color) => {
     ctx.save();
     ctx.fillStyle = color || 'white';
@@ -86,7 +99,7 @@ const stepLogicHandlers = {
 };
 
 const setupCanvasAndDrawHandlers = () => {
-    let longLivedCanvas = new Canvas(plinkoWidth + (2*margins), plinkoHeight + (2*margins));
+    let longLivedCanvas = new Canvas(plinkoWidth + (2*margins.x), (margins.top + plinkoHeight + margins.bottom));
     let ctx = longLivedCanvas.getContext('2d');
 
     return {
@@ -97,28 +110,43 @@ const setupCanvasAndDrawHandlers = () => {
         drawBall({ ball }) {
             const { render: { fillStyle }, position: { x, y }, circleRadius } = ball;
 
-            const ballAge = (getTime(engine) - ball.birthdate);
+            const ballAge = (getTime(engine) - ball.data.birthdate);
             const { average } = getAverageMinMax();
             const dullness = ((ballAge > average) ? 0.4 : 1) * 255;
             ctx.fillStyle = `hsl(${fillStyle[0]},100%,50%)`;
-            ellipse(ctx, margins+x, margins+y, circleRadius * 2);
+            ellipse(ctx, margins.x+x, margins.top+y, circleRadius * 2);
             ctx.fill();
         },
         drawPeg({ peg }) {
             const { position: { x, y }, circleRadius } = peg;
-            ctx.fillStyle = 'rgb(240,240,240)';
-            ellipse(ctx, margins+x, margins+y, circleRadius * 2);
+            ctx.fillStyle = 'rgb(150,150,150)';
+            ellipse(ctx, margins.x+x, margins.top+y, circleRadius * 2);
+            ctx.fill();
+        },
+        drawWall({ wall }) {
+            let xysArray = wall.vertices
+                .map(({ x, y }) => [margins.x+x, margins.top+y]);
+            ctx.fillStyle = `rgb(0,0,0)`;
+            quad(ctx, xysArray);
+            ctx.fill();
+        },
+        drawCorpse({ corpse }) {
+            const { render: { fillStyle }, position: { x, y }, circleRadius } = corpse;
+            ctx.fillStyle = `rgb(${230},${230},${230})`;
+            ellipse(ctx, margins.x+x, margins.top+y, circleRadius * 2);
             ctx.fill();
         }
     };
 };
 
 let frameRequestCallback;
-let { longLivedCanvas, drawBall, drawPeg, frameReset } = setupCanvasAndDrawHandlers();
+let { longLivedCanvas, drawBall, drawPeg, drawWall, drawCorpse, frameReset } = setupCanvasAndDrawHandlers();
 
 const stepLogicHandlersWithDrawingHandlers = Object.assign({}, stepLogicHandlers, {
     drawBall,
-    drawPeg
+    drawPeg,
+    drawWall,
+    drawCorpse
 });
 
 const { spawn } = require('child_process');

@@ -1,67 +1,16 @@
 import Matter from 'matter-js/build/matter';
 const { Composite } = Matter;
 
-export const theBookOfPlinkoersHeaders = [
-    'ballRadius',
-    'position',
-    'hue',
-    'mutationRate:ballRadius',
-    'mutationRate:position',
-    'mutationRate:restitution',
-    'mutationRate:midstreamBirthrate',
-    'restitution',
-    'midstreamBirthrate',
-    'generation',
-    'birthdate',
-    'age',
-    'ancestry',
-    'birthType',
-    'deathType',
-    'deathPositionX',
-    'deathPositionY',
-    'midstreamChildren',
-    'ate'
-];
+import { getGenomeColumnHeaders, getGenomeColumns } from './genome';
+import { calculateDataFields, getDataColumnHeaders, getDataColumns } from './data';
+
+export const theBookOfPlinkoersHeaders =
+    getGenomeColumnHeaders().concat(getDataColumnHeaders());
 
 export const ballToEntry = (ball, now, beginTime) => {
-    const {
-        ballRadius,
-        position,
-        hue,
-        mutationRates,
-        restitution,
-        midstreamBirthrate,
-        generation,
-        ancestry,
-        birthType,
-        deathType,
-        deathPositionX,
-        deathPositionY,
-        midstreamChildren,
-        ate
-    } = ball.genome;
-    const ballAge = (now - ball.birthdate);
-    return [
-        ballRadius,
-        position,
-        hue,
-        mutationRates.ballRadius,
-        mutationRates.position,
-        mutationRates.restitution,
-        mutationRates.midstreamBirthrate,
-        restitution,
-        midstreamBirthrate,
-        generation,
-        ball.birthdate - beginTime,
-        ballAge,
-        ancestry,
-        birthType,
-        deathType,
-        deathPositionX,
-        deathPositionY,
-        midstreamChildren,
-        ate
-    ];
+    const genomeColumns = getGenomeColumns(ball.genome);
+    const dataColumns = getDataColumns(calculateDataFields(ball, { now, beginTime }));
+    return genomeColumns.concat(dataColumns);
 };
 
 export const BookOfPlinkoers = () => {

@@ -36,7 +36,7 @@ const stepLogicHandlers = {
     drawBall({ ball }) {
         const { render: { fillStyle }, position: { x, y }, circleRadius } = ball;
 
-        const ballAge = (getTime(engine) - ball.birthdate);
+        const ballAge = (getTime(engine) - ball.data.birthdate);
         const { average } = getAverageMinMax();
         const dullness = ((ballAge > average) ? 0.4 : 1) * 255;
         fill([ fillStyle[0], dullness, dullness ]);
@@ -44,7 +44,20 @@ const stepLogicHandlers = {
     },
     drawPeg({ peg }) {
         const { position: { x, y }, circleRadius } = peg;
-        fill(240);
+        fill(150);
+        ellipse(x, y, circleRadius * 2);
+    },
+    drawWall({ wall }) {
+        const { position: { x, y }, vertices } = wall;
+        let xysArray = vertices
+            .map(({ x, y }) => [x, y])
+            .reduce((acc, arr) => acc.concat(arr), []);
+        fill(0);
+        quad(...xysArray);
+    },
+    drawCorpse({ corpse }) {
+        const { render: { fillStyle }, position: { x, y }, circleRadius } = corpse;
+        fill(230);
         ellipse(x, y, circleRadius * 2);
     }
 };
@@ -61,7 +74,7 @@ window.draw = () => {
     background(255);
     strokeWeight(0);
 
-    translate((width / 2) - (plinkoWidth / 2), 0);
+    translate((width / 2) - (plinkoWidth / 2), 100);
 
     stepLogic(stepLogicHandlers);
 };

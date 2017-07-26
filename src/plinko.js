@@ -162,22 +162,22 @@ const stepLogic = ({ beforeKillBall, afterCycle, drawBall, drawCorpse, drawPeg, 
     afterCycle && afterCycle({ numOfBalls });
 }
 
-const getMurderAbility = (random, typeField, { eater, attacked }) => {
+const getMurderAbility = (random, { eater, attacked }) => {
     // const typeFloat = eater.genome[typeField];
     return eater.speed > attacked.speed;
 };
 
 const cannibalismCheck = (random, { bodyA, bodyB }) => {
     return {
-        aWantsToEat: (random() < bodyA.genome.cannibalismRate) && getMurderAbility(random, 'cannibalismType', { eater: bodyA, attacked: bodyB }),
-        bWantsToEat: (random() < bodyB.genome.cannibalismRate) && getMurderAbility(random, 'cannibalismType', { eater: bodyB, attacked: bodyA })
+        aWantsToEat: (random() < bodyA.genome.cannibalismRate) && getMurderAbility(random, { eater: bodyA, attacked: bodyB }),
+        bWantsToEat: (random() < bodyB.genome.cannibalismRate) && getMurderAbility(random, { eater: bodyB, attacked: bodyA })
     };
 };
 
 const carnivorismCheck = (random, { bodyA, bodyB }) => {
     return {
-        aWantsToEat: (random() < bodyA.genome.carnivorismRate) && getMurderAbility(random, 'carnivorismType', { eater: bodyA, attacked: bodyB }),
-        bWantsToEat: (random() < bodyB.genome.carnivorismRate) && getMurderAbility(random, 'carnivorismType', { eater: bodyB, attacked: bodyA })
+        aWantsToEat: (random() < bodyA.genome.carnivorismRate) && getMurderAbility(random, { eater: bodyA, attacked: bodyB }),
+        bWantsToEat: (random() < bodyB.genome.carnivorismRate) && getMurderAbility(random, { eater: bodyB, attacked: bodyA })
     };
 };
 
@@ -210,11 +210,12 @@ const setup = ({ sessionId, beforeKillBall } = {}) => {
                     areSameSpecies ? eater.data.ownEaten++ : eater.data.othersEaten++;
                     eater.data.energy += (consumedRadius + consumedEnergy);
                     eater.data.totalLifeEnergy += (consumedRadius + consumedEnergy);
-                    const { position: { x, y }, genome: { ballRadius, splitRate, becomePegRate } } = eater;
+                    const { circleRadius, position: { x, y }, genome: { splitRate, becomePegRate } } = eater;
                     if (eater.data.energy > pegEaterEnergy && y > 0.2 && random() < becomePegRate) {
                         killBall({ ball: eater, beforeKillBall }, TYPES_OF_BIRTH_AND_DEATH.DEATH.BECAME_PEG);
-                    } else if (eater.data.energy > ballRadius && y > 0.2 && random() < splitRate) {
-                        spawnBall(eater, TYPES_OF_BIRTH_AND_DEATH.BIRTH.SPLIT, { xOveride: x, yOveride: y-ballRadius });
+                    } else if (eater.data.energy > circleRadius && y > 0.2 && random() < splitRate) {
+                        spawnBall(eater, TYPES_OF_BIRTH_AND_DEATH.BIRTH.SPLIT, { xOveride: x, yOveride: y-circleRadius });
+                        eater.data.energy -= circleRadius;
                         eater.data.timesSplit++;
                     }
                 }

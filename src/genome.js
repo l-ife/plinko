@@ -123,32 +123,7 @@ const genomeDefinition = {
             }
         }
     },
-    carnivorismType: {
-        type: GENETYPES.FLOAT,
-        bounds: [0, 1],
-        mutates: {
-            magnitude: 0.1,
-            rate: {
-                bounds: [0, 1],
-                getNewBeingValue: () => 1,
-                mutates: { magnitude: 0.05, rate: 1 }
-            }
-        }
-    },
     cannibalismRate: {
-        bounds: [0, 1],
-        getNewBeingValue: () => 0,
-        mutates: {
-            magnitude: 0.1,
-            rate: {
-                bounds: [0, 1],
-                getNewBeingValue: () => 1,
-                mutates: { magnitude: 0.05, rate: 1 }
-            }
-        }
-    },
-    cannibalismType: {
-        type: GENETYPES.FLOAT,
         bounds: [0, 1],
         getNewBeingValue: () => 0,
         mutates: {

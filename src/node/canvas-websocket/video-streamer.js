@@ -14,8 +14,8 @@ process.stdout.write(linePrefix);
 // const STREAM_KEY="5106-tbme-mxm4-fvvj";
 
 // Twitch.tv
-const SERVER = 'live-sjc.twitch.tv/app';
-const STREAM_KEY = 'live_17380844_UCtYJqUBDYL0BleGKGsG4jLWCnXbzZ?bandwidthtest=true';
+// const SERVER = 'live-sjc.twitch.tv/app';
+// const STREAM_KEY = 'live_17380844_UCtYJqUBDYL0BleGKGsG4jLWCnXbzZ?bandwidthtest=true';
 
 let proc = ffmpeg()
   .input(process.stdin)
@@ -23,8 +23,8 @@ let proc = ffmpeg()
 
   .output(`./data/${process.env.filesName}.mkv`)
     .outputOptions('-preset veryslow')
-    .size(`${250}x?`)
-    .videoBitrate('2000k')
+    .size(`${250*1.5}x?`)
+    .videoBitrate(`${2000*1.5}k`)
     .fps(30)
 
   // .output(`rtmp://${SERVER}/${STREAM_KEY}`)

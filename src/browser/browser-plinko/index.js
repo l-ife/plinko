@@ -36,10 +36,11 @@ const stepLogicHandlers = {
     drawBall({ ball }) {
         const { render: { fillStyle }, position: { x, y }, circleRadius } = ball;
 
-        const ballAge = (getTime(engine) - ball.data.birthdate);
-        const { average } = getAverageMinMax();
-        const dullness = ((ballAge > average) ? 0.4 : 1) * 255;
-        fill([ fillStyle[0], dullness, dullness ]);
+        // const ballAge = (getTime(engine) - ball.data.birthdate);
+        // const { average } = getAverageMinMax();
+        // const dullness = ((ballAge > average) ? 0.4 : 1) * 255;
+        // fill([ fillStyle[0], dullness, dullness ]);
+        fill([ fillStyle[0], 255, 255 ]);
         ellipse(x, y, circleRadius * 2);
     },
     drawPeg({ peg }) {

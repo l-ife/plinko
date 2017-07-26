@@ -150,6 +150,19 @@ const genomeDefinition = {
     cannibalismType: {
         type: GENETYPES.FLOAT,
         bounds: [0, 1],
+        getNewBeingValue: () => 0,
+        mutates: {
+            magnitude: 0.1,
+            rate: {
+                bounds: [0, 1],
+                getNewBeingValue: () => 1,
+                mutates: { magnitude: 0.05, rate: 1 }
+            }
+        }
+    },
+    splitRate: {
+        type: GENETYPES.FLOAT,
+        bounds: [0, 1],
         mutates: {
             magnitude: 0.1,
             rate: {

@@ -77,6 +77,7 @@ const ballAgeSurvivalFactor = (ballAge, randomFactorRange = 0.5) => {
     return (randomFactor + (ageFactor - 1));
 };
 
+const DIEOFF_POINT = 2000;
 let numOfBallsLastCycle = 0;
 const stepLogic = ({ beforeKillBall, afterCycle, drawBall, drawCorpse, drawPeg, drawWall }) => {
     let bodies = Composite.allBodies(engine.world);
@@ -104,7 +105,7 @@ const stepLogic = ({ beforeKillBall, afterCycle, drawBall, drawCorpse, drawPeg, 
             const getBallAgeSurvivalFactor = (randomFactorRange) => {
                 return ballAgeSurvivalFactor(ballAge, randomFactorRange);
             };
-            if (numOfBallsLastCycle > 300 && getBallAgeSurvivalFactor() < 0.50) {
+            if (numOfBallsLastCycle > DIEOFF_POINT && getBallAgeSurvivalFactor() < 0.50) {
                 killBall({ ball: n, beforeKillBall }, TYPES_OF_BIRTH_AND_DEATH.DEATH.DIEOFF);
                 numOfBalls--;
                 return;
@@ -182,7 +183,7 @@ const carnivorismCheck = (random, { bodyA, bodyB }) => {
 
 const setup = ({ sessionId, beforeKillBall } = {}) => {
     random = new Alea(sessionId);
-    engine = Engine.create();
+    engine = Engine.create({ enableSleeping: true });
     beginTime = getTime();
     trailingData = TrailingData({ age: 3000 });
     // theBest = SortedBuffer(100);
@@ -214,6 +215,7 @@ const setup = ({ sessionId, beforeKillBall } = {}) => {
                         killBall({ ball: eater, beforeKillBall }, TYPES_OF_BIRTH_AND_DEATH.DEATH.BECAME_PEG);
                     } else if (eater.data.energy > ballRadius && y > 0.2 && random() < splitRate) {
                         spawnBall(eater, TYPES_OF_BIRTH_AND_DEATH.BIRTH.SPLIT, { xOveride: x, yOveride: y-ballRadius });
+                        eater.data.timesSplit++;
                     }
                 }
             } else if (

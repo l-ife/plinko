@@ -40,6 +40,9 @@ const dataDefinitions = {
     pegsEaten: {
         getInitialValue: () => 0
     },
+    timesSplit: {
+        getInitialValue: () => 0
+    },
     birthType: {
         getInitialValue: ({ birthType }) => birthType
     },

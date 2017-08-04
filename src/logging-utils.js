@@ -1,5 +1,4 @@
-import Matter from 'matter-js/build/matter';
-const { Composite } = Matter;
+import { Composite } from 'matter-js/build/matter.js';
 
 import { getGenomeColumnHeaders, getGenomeColumns } from './genome';
 import { calculateDataFields, getDataColumnHeaders, getDataColumns } from './data';

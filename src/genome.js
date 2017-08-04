@@ -51,6 +51,19 @@ const genomeDefinition = {
             }
         }
     },
+    growthRate: {
+        type: GENETYPES.FLOAT,
+        bounds: [0, 1],
+        getNewBeingValue: () => 1,
+        mutates: {
+            magnitude: 0.05,
+            rate: {
+                bounds: [0, 1],
+                getNewBeingValue: () => 1,
+                mutates: { magnitude: 0.025, rate: 1 }
+            }
+        }
+    },
     restitution: {
         type: GENETYPES.FLOAT,
         bounds: [0, 1],

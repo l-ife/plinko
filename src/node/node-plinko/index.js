@@ -1,7 +1,6 @@
 const { join: pathJoin } = require('path');
 
-import Matter from 'matter-js/build/matter';
-const { Bodies, Body, Engine, Events, Render, World } = Matter;
+import { Bodies, Body, Engine, Events, World } from 'matter-js/build/matter.js';
 
 import plinko from '../../plinko';
 const { setup, stepLogic, utils: { getTime } } = plinko;

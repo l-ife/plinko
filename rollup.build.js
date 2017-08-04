@@ -1,21 +1,83 @@
+const assign = require('lodash/assign');
+
 const rollup = require('rollup');
 const watch = require('rollup-watch');
-const resolve = require('rollup-plugin-node-resolve');
 const babel = require('rollup-plugin-babel');
+const resolve = require('rollup-plugin-node-resolve');
 const commonjs = require('rollup-plugin-commonjs');
-const dsv = require('rollup-plugin-dsv');
+const uglify = require('rollup-plugin-uglify');
+const nodeBuiltins = require('rollup-plugin-node-builtins');
+const nodeGlobals = require('rollup-plugin-node-globals');
+const livereload = require('rollup-plugin-livereload');
 
 const defaults = {
-  format: 'iife',
-  sourceMap: true,
+  external: [
+    'matter-js/build/matter.js',
+    'alea',
+    'lodash/forEach',
+    'lodash/mapValues',
+    'lodash/get',
+    'lodash/map'
+  ],
+  globals: {
+    'matter-js/build/matter.js': 'Matter',
+    alea: 'Alea',
+    'lodash/forEach': 'forEach',
+    'lodash/mapValues': 'mapValues',
+    'lodash/get': 'get',
+    'lodash/map': 'map'
+  },
+};
+
+const getNodeDefaults = (baseOptions) => assign({}, defaults, {
+  format: 'cjs',
   plugins: [
-    resolve({ module: true }),
-    commonjs(),
+    commonjs({
+      namedExports: {
+        'matter-js/build/matter.js': [
+          'Composite', 'Bodies', 'Body', 'Common', 'Composite', 'Engine', 'Events', 'Render', 'World'
+        ]
+      }
+    }),
+    // uglify(),
     babel({
       exclude: ['node_modules/**', 'data/**']
-    }),
-    dsv()
+    })
   ]
+}, baseOptions);
+
+const getBrowserDefaults = (baseOptions, livereloadOptions) => {
+  let browserPlugins = [
+      resolve({
+        // jsnext: true,
+        module: true,
+        // main: true,
+        // modulesOnly: true,
+        // browser: true
+      }),
+      commonjs({
+        namedExports: {
+          'matter-js/build/matter.js': [
+            'Composite', 'Bodies', 'Body', 'Common', 'Composite', 'Engine', 'Events', 'Render', 'World'
+          ]
+        }
+      }),
+      // uglify(),
+      babel({
+        exclude: ['node_modules/**', 'data/**']
+      }),
+      nodeBuiltins(),
+      nodeGlobals()
+    ];
+  if (livereloadOptions) {
+    const { livereloadServer, livereloadWatchPath, port } = livereloadOptions;
+    browserPlugins.push( livereloadServer || livereload({ watch: livereloadWatchPath, port }) );
+  }
+  return assign({}, defaults, {
+    format: 'iife',
+    sourceMap: true,
+    plugins: browserPlugins
+  }, baseOptions);
 };
 
 const stderr = console.error.bind(console)
@@ -48,6 +110,7 @@ const wrappedWatch = (configs) => {
 }
 
 module.exports = {
-  defaults,
-  watch: wrappedWatch
+  watch: wrappedWatch,
+  getBrowserDefaults,
+  getNodeDefaults
 }

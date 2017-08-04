@@ -1,5 +1,5 @@
-const range = require('lodash/range');
-const { Bodies, Engine, Events, Render, World } = require('matter-js/build/matter');
+import range from 'lodash/range';
+import { Bodies, Engine, Events, Render, World } from 'matter-js/build/matter.js';
 const { poisson, beta, betaRight, betaLeft } = require('./distributions');
 
 // create an engine

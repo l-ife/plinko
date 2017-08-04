@@ -3,8 +3,7 @@ import { getUrlArguments } from '../browser-utils';
 import { BookOfPlinkoers } from '../../logging-utils';
 import { saveToDisk, startPeriodicCsvBackup } from '../logging-utils';
 
-import Matter from 'matter-js/build/matter';
-const { Bodies, Body, Engine, Events, Render, World } = Matter;
+import { Bodies, Body, Engine, Events, World } from 'matter-js/build/matter.js';
 
 import plinko from '../../plinko';
 const { setup, stepLogic, utils: { getTime, ballAgeSurvivalFactor, getAverageMinMax }, consts: { plinkoWidth, plinkoHeight, oldAge } } = plinko;
@@ -34,31 +33,31 @@ const stepLogicHandlers = {
         bookOfPlinkoers.addDead(ball, getTime(engine), beginTime);
     },
     drawBall({ ball }) {
-        const { render: { fillStyle }, position: { x, y }, circleRadius } = ball;
+        const { debug, render: { fillStyle }, position: { x, y }, circleRadius } = ball;
 
         // const ballAge = (getTime(engine) - ball.data.birthdate);
         // const { average } = getAverageMinMax();
         // const dullness = ((ballAge > average) ? 0.4 : 1) * 255;
         // fill([ fillStyle[0], dullness, dullness ]);
-        fill([ fillStyle[0], 255, 255 ]);
+        fill([ debug?0:fillStyle[0], 255, 255 ]);
         ellipse(x, y, circleRadius * 2);
     },
     drawPeg({ peg }) {
-        const { position: { x, y }, circleRadius } = peg;
-        fill(150);
+        const { debug, position: { x, y }, circleRadius } = peg;
+        fill(debug?0:150);
         ellipse(x, y, circleRadius * 2);
     },
     drawWall({ wall }) {
-        const { position: { x, y }, vertices } = wall;
+        const { debug, position: { x, y }, vertices } = wall;
         let xysArray = vertices
             .map(({ x, y }) => [x, y])
             .reduce((acc, arr) => acc.concat(arr), []);
-        fill(0);
+        fill(debug?150:0);
         quad(...xysArray);
     },
     drawCorpse({ corpse }) {
-        const { render: { fillStyle }, position: { x, y }, circleRadius } = corpse;
-        fill(230);
+        const { debug, render: { fillStyle }, position: { x, y }, circleRadius } = corpse;
+        fill(debug?0:230);
         ellipse(x, y, circleRadius * 2);
     }
 };
@@ -71,6 +70,7 @@ window.setup = () => {
     createCanvas(window.windowWidth, window.windowHeight);
 };
 
+let count = 0;
 window.draw = () => {
     background(255);
     strokeWeight(0);
@@ -78,6 +78,12 @@ window.draw = () => {
     translate((width / 2) - (plinkoWidth / 2), 100);
 
     stepLogic(stepLogicHandlers);
+    if(count>1000){
+        console.log(engine.pairs.list.length);
+        count = 0;
+    } else {
+        count++;
+    }
 };
 
 window.windowResized = () => {

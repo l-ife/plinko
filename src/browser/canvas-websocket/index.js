@@ -18,6 +18,7 @@ const pollAndLoop = () => {
             updateState(true);
             const loop = () => {
                 ws.send(1);
+                if (timeout) clearTimeout(timeout);
                 timeout = setTimeout(loop, 1000/rate);
             };
             loop();
@@ -43,7 +44,7 @@ let portSelector = document.getElementById('port');
 ports.forEach(port => addOption(portSelector, port));
 
 rateSelector.onchange = function() {
-    rate = parseFloat(this.value || this.options[this.selectedIndex].value); 
+    rate = parseFloat(this.value || this.options[this.selectedIndex].value);
     pollAndLoop();
 };
 portSelector.onchange = function() {

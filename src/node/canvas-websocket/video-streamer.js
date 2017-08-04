@@ -23,8 +23,8 @@ let proc = ffmpeg()
 
   .output(`./data/${process.env.filesName}.mkv`)
     .outputOptions('-preset veryslow')
-    .size(`${250*1.5}x?`)
-    .videoBitrate(`${2000*1.5}k`)
+    .size(`${1000}x?`)
+    .videoBitrate(`${32000}k`)
     .fps(30)
 
   // .output(`rtmp://${SERVER}/${STREAM_KEY}`)

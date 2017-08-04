@@ -1,51 +1,24 @@
-const { defaults, watch } = require('./rollup.build');
+const { watch, getBrowserDefaults, getNodeDefaults } = require('./rollup.build');
 
-const babel = require('rollup-plugin-babel');
-const commonjs = require('rollup-plugin-commonjs');
-const livereload = require('rollup-plugin-livereload');
-
-const nodeBuiltins = require('rollup-plugin-node-builtins');
-const nodeGlobals = require('rollup-plugin-node-globals');
-
-const livereloadServer = livereload({
-    watch: 'src/node-server/plinko/',
-    port: 35733
-});
-
-watch([
-  Object.assign({}, defaults, {
+const configs = [
+  getBrowserDefaults({
     entry: 'src/browser/canvas-websocket/index.js',
     dest: 'lib/browser/canvas-websocket.js',
-    moduleName: 'NodeServerBrowserPlinko',
-    plugins: defaults.plugins.concat([
-      livereloadServer,
-      nodeBuiltins(),
-      nodeGlobals()
-    ])
-  }),
-  {
+    moduleName: 'CanvasWebsocketBrowserPlinko'
+  }, { livereloadWatchPath: 'src/browser/canvas-websocket', port: 35733 }),
+  getNodeDefaults({
     entry: 'src/node/canvas-websocket/index.js',
     dest: 'lib/node/canvas-websocket.js',
-    moduleName: 'NodeServerNodePlinko',
-    format: 'cjs',
-    plugins: [
-      commonjs(),
-      babel({
-        exclude: ['node_modules/**', 'data/**']
-      })
-    ]
-  },
-  {
+    moduleName: 'CanvasWebsocketNodePlinko'
+  }),
+  getNodeDefaults({
     entry: 'src/node/canvas-websocket/video-streamer.js',
     dest: 'lib/node/canvas-video-streamer.js',
-    moduleName: 'ChildProcessVideoStreamer',
-    format: 'cjs',
-    plugins: [
-      commonjs(),
-      babel({
-        exclude: ['node_modules/**', 'data/**']
-      })
-    ]
-  }
-]);
+    moduleName: 'ChildProcessVideoStreamer'
+  })
+];
+
+console.log(configs);
+
+watch(configs);
 

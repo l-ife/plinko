@@ -1,8 +1,8 @@
+const stream = require('stream');
 const { join: pathJoin } = require('path');
 const WebSocket = require('ws');
 const Canvas = require('canvas');
-import Matter from 'matter-js/build/matter';
-const { Bodies, Body, Engine, Events, Render, World } = Matter;
+import { Bodies, Body, Composite, Engine, Events, World } from 'matter-js/build/matter.js';
 
 import plinko from '../../plinko';
 const { setup, stepLogic, utils: { getTime, getAverageMinMax }, consts: { plinkoWidth, plinkoHeight } } = plinko;
@@ -151,25 +151,34 @@ const stepLogicHandlersWithDrawingHandlers = Object.assign({}, stepLogicHandlers
 
 const { spawn } = require('child_process');
 
+let testBuffer = new stream.PassThrough();
+let testErrorBuffer = new stream.PassThrough();
 let child = spawn('node', ['./lib/node/canvas-video-streamer.js'], { env: Object.assign(process.env, { filesName })});
 child.on('error', err => console.error(err));
+
 child.stdout.pipe(process.stdout);
 child.stderr.pipe(process.stderr);
 
-let ffplay = spawn('ffplay', ['-window_title', filesName, '-'], { stdio: ['pipe', 'ignore', 'ignore'] });
-ffplay.on('error', err => console.error(err));
-
-const stream = require('stream');
+// let ffplay = spawn('ffplay', ['-window_title', filesName, '-'], { stdio: ['pipe', 'ignore', 'ignore'] });
+// ffplay.on('error', err => console.error(err));
 
 // Initiate the source
 let bufferStream = new stream.PassThrough();
 bufferStream.pipe(child.stdin);
-bufferStream.pipe(ffplay.stdin);
+let sinkStream = new stream.PassThrough();
+bufferStream.pipe(sinkStream);
 
 const ticksPerFrame = 50;
 let tickStep = 0;
 
-setInterval(() => {
+const FREQUENCY = 1000;
+let count = FREQUENCY;
+// let hd;
+// let metacount = 1;
+// let snapshot1, snapshot2;
+const runStartTime = (new Date()).getTime();
+console.log(`(new Date()).getTime(),engine.timing.timestamp,heapSize,heapUsed,allBodies.length,staticBodies.length,engine.pairs.list.length`);
+let theInterval = setInterval(() => {
     Events.trigger(engine, 'tick', { timestamp: engine.timing.timestamp });
     Engine.update(engine, engine.timing.delta);
     Events.trigger(engine, 'afterTick', { timestamp: engine.timing.timestamp });
@@ -195,5 +204,16 @@ setInterval(() => {
         }));
     } else {
         stepLogic(stepLogicHandlers);
+    }
+    if (count === 0) {
+        const { heapTotal: heapSize, heapUsed: heapUsed } = process.memoryUsage();
+        const allBodies = Composite.allBodies(engine.world);
+        const staticBodies = allBodies.filter(({ isStatic }) => isStatic);
+
+        console.log(`${(new Date()).getTime()-runStartTime},${engine.timing.timestamp},${heapSize},${heapUsed},${allBodies.length},${staticBodies.length},${engine.pairs.list.length}`);
+
+        count = FREQUENCY;
+    } else if (count > 0) {
+        count--;
     }
 }, 0);

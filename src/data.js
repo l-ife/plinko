@@ -73,5 +73,5 @@ export function calculateDataFields(ball, contextualData) {
 };
 
 export function getDataColumns(ballData) {
-    return map(dataDefinitions, (dataDefinition, key) => +(ballData[key].toFixed?ballData[key].toFixed(4):ballData[key]));
+    return map(dataDefinitions, (dataDefinition, key) => +(ballData[key] && ballData[key].toFixed?ballData[key].toFixed(4):ballData[key]));
 };

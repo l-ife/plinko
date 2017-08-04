@@ -1,8 +1,10 @@
+const { spawn } = require('child_process');
+const { createWriteStream } = require('fs');
 const stream = require('stream');
 const { join: pathJoin } = require('path');
 const WebSocket = require('ws');
 const Canvas = require('canvas');
-import { Bodies, Body, Composite, Engine, Events, World } from 'matter-js/build/matter.js';
+import { Bodies, Body, Composite, Engine, Events, World } from '../../matter-js-exports-shim';
 
 import plinko from '../../plinko';
 const { setup, stepLogic, utils: { getTime, getAverageMinMax }, consts: { plinkoWidth, plinkoHeight } } = plinko;
@@ -149,24 +151,21 @@ const stepLogicHandlersWithDrawingHandlers = Object.assign({}, stepLogicHandlers
     drawCorpse
 });
 
-const { spawn } = require('child_process');
-
-let testBuffer = new stream.PassThrough();
-let testErrorBuffer = new stream.PassThrough();
 let child = spawn('node', ['./lib/node/canvas-video-streamer.js'], { env: Object.assign(process.env, { filesName })});
 child.on('error', err => console.error(err));
 
 child.stdout.pipe(process.stdout);
 child.stderr.pipe(process.stderr);
 
-// let ffplay = spawn('ffplay', ['-window_title', filesName, '-'], { stdio: ['pipe', 'ignore', 'ignore'] });
-// ffplay.on('error', err => console.error(err));
-
 // Initiate the source
 let bufferStream = new stream.PassThrough();
 bufferStream.pipe(child.stdin);
-let sinkStream = new stream.PassThrough();
-bufferStream.pipe(sinkStream);
+
+// let ffplay = spawn('ffplay', ['-window_title', filesName, '-'], { stdio: ['pipe', 'ignore', 'ignore'] });
+// ffplay.on('error', err => console.error(err));
+// bufferStream.pipe(ffplay.stdin);
+
+let memoryMonitorWriteBuffer = createWriteStream(`./data/${filesName}-memory.csv`);
 
 const ticksPerFrame = 50;
 let tickStep = 0;
@@ -177,7 +176,7 @@ let count = FREQUENCY;
 // let metacount = 1;
 // let snapshot1, snapshot2;
 const runStartTime = (new Date()).getTime();
-console.log(`(new Date()).getTime(),engine.timing.timestamp,heapSize,heapUsed,allBodies.length,staticBodies.length,engine.pairs.list.length`);
+memoryMonitorWriteBuffer.write(`(new Date()).getTime(),engine.timing.timestamp,heapSize,heapUsed,allBodies.length,staticBodies.length,engine.pairs.list.length\n`);
 let theInterval = setInterval(() => {
     Events.trigger(engine, 'tick', { timestamp: engine.timing.timestamp });
     Engine.update(engine, engine.timing.delta);
@@ -210,7 +209,7 @@ let theInterval = setInterval(() => {
         const allBodies = Composite.allBodies(engine.world);
         const staticBodies = allBodies.filter(({ isStatic }) => isStatic);
 
-        console.log(`${(new Date()).getTime()-runStartTime},${engine.timing.timestamp},${heapSize},${heapUsed},${allBodies.length},${staticBodies.length},${engine.pairs.list.length}`);
+        memoryMonitorWriteBuffer.write(`${(new Date()).getTime()-runStartTime},${engine.timing.timestamp},${heapSize},${heapUsed},${allBodies.length},${staticBodies.length},${engine.pairs.list.length}\n`);
 
         count = FREQUENCY;
     } else if (count > 0) {

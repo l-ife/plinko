@@ -14,7 +14,7 @@ let numOfPegs = 0;
 
 const oldAge = 75000;
 
-import { Bodies, Body, Composite, Engine, Events, World } from 'matter-js/build/matter.js';
+import { Bodies, Body, Composite, Engine, Events, World } from './matter-js-exports-shim';
 
 import { makeNewBeingGenome, makeChildGenome } from './genome';
 import { getNewBeingData } from './data';

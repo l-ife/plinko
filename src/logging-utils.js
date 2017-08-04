@@ -1,4 +1,4 @@
-import { Composite } from 'matter-js/build/matter.js';
+import { Composite } from './matter-js-exports-shim';
 
 import { getGenomeColumnHeaders, getGenomeColumns } from './genome';
 import { calculateDataFields, getDataColumnHeaders, getDataColumns } from './data';

@@ -10,9 +10,11 @@ const nodeBuiltins = require('rollup-plugin-node-builtins');
 const nodeGlobals = require('rollup-plugin-node-globals');
 const livereload = require('rollup-plugin-livereload');
 
-const defaults = {
+const defaults = {};
+
+const getNodeDefaults = (baseOptions) => assign({}, defaults, {
+  format: 'cjs',
   external: [
-    'matter-js/build/matter.js',
     'alea',
     'lodash/forEach',
     'lodash/mapValues',
@@ -27,10 +29,6 @@ const defaults = {
     'lodash/get': 'get',
     'lodash/map': 'map'
   },
-};
-
-const getNodeDefaults = (baseOptions) => assign({}, defaults, {
-  format: 'cjs',
   plugins: [
     commonjs({
       namedExports: {
@@ -39,7 +37,6 @@ const getNodeDefaults = (baseOptions) => assign({}, defaults, {
         ]
       }
     }),
-    // uglify(),
     babel({
       exclude: ['node_modules/**', 'data/**']
     })
@@ -47,37 +44,31 @@ const getNodeDefaults = (baseOptions) => assign({}, defaults, {
 }, baseOptions);
 
 const getBrowserDefaults = (baseOptions, livereloadOptions) => {
-  let browserPlugins = [
+  let browserOptions = {
+    format: 'iife',
+    sourceMap: true,
+    plugins: [
+      nodeBuiltins(),
+      nodeGlobals(),
       resolve({
         // jsnext: true,
         module: true,
+        // browser: true,
         // main: true,
         // modulesOnly: true,
-        // browser: true
       }),
-      commonjs({
-        namedExports: {
-          'matter-js/build/matter.js': [
-            'Composite', 'Bodies', 'Body', 'Common', 'Composite', 'Engine', 'Events', 'Render', 'World'
-          ]
-        }
-      }),
+      commonjs(),
       // uglify(),
       babel({
         exclude: ['node_modules/**', 'data/**']
       }),
-      nodeBuiltins(),
-      nodeGlobals()
-    ];
+    ]
+  };
   if (livereloadOptions) {
     const { livereloadServer, livereloadWatchPath, port } = livereloadOptions;
-    browserPlugins.push( livereloadServer || livereload({ watch: livereloadWatchPath, port }) );
+    browserOptions.plugins.push( livereloadServer || livereload({ watch: livereloadWatchPath, port }) );
   }
-  return assign({}, defaults, {
-    format: 'iife',
-    sourceMap: true,
-    plugins: browserPlugins
-  }, baseOptions);
+  return assign({}, defaults, browserOptions, baseOptions);
 };
 
 const stderr = console.error.bind(console)

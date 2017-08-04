@@ -3,7 +3,7 @@ import { getUrlArguments } from '../browser-utils';
 import { BookOfPlinkoers } from '../../logging-utils';
 import { saveToDisk, startPeriodicCsvBackup } from '../logging-utils';
 
-import { Bodies, Body, Engine, Events, World } from 'matter-js/build/matter.js';
+import { Bodies, Body, Engine, Events, World } from '../../matter-js-exports-shim';
 
 import plinko from '../../plinko';
 const { setup, stepLogic, utils: { getTime, ballAgeSurvivalFactor, getAverageMinMax }, consts: { plinkoWidth, plinkoHeight, oldAge } } = plinko;

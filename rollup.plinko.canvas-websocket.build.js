@@ -1,6 +1,6 @@
 const { watch, getBrowserDefaults, getNodeDefaults } = require('./rollup.build');
 
-const configs = [
+watch([
   getBrowserDefaults({
     entry: 'src/browser/canvas-websocket/index.js',
     dest: 'lib/browser/canvas-websocket.js',
@@ -16,9 +16,5 @@ const configs = [
     dest: 'lib/node/canvas-video-streamer.js',
     moduleName: 'ChildProcessVideoStreamer'
   })
-];
-
-console.log(configs);
-
-watch(configs);
+]);
 

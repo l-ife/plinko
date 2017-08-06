@@ -33,18 +33,19 @@ const stepLogicHandlers = {
         bookOfPlinkoers.addDead(ball, getTime(engine), beginTime);
     },
     drawBall({ ball }) {
-        const { debug, render: { fillStyle }, position: { x, y }, circleRadius } = ball;
+        const { debug, render: { fillStyle }, position: { x, y }, circleRadius, data: { energy } } = ball;
 
         // const ballAge = (getTime(engine) - ball.data.birthdate);
         // const { average } = getAverageMinMax();
         // const dullness = ((ballAge > average) ? 0.4 : 1) * 255;
         // fill([ fillStyle[0], dullness, dullness ]);
-        fill([ debug?0:fillStyle[0], 255, 255 ]);
+        fill([ debug?0:fillStyle[0], 30+Math.min(energy/5000, 1)*(255-30), (Math.min(energy/5000, 1)*(0.5*255))+(0.5*255) ]);
         ellipse(x, y, circleRadius * 2);
     },
     drawPeg({ peg }) {
-        const { debug, position: { x, y }, circleRadius } = peg;
+        const { debug, position: { x, y }, circleRadius, pegEnergy } = peg;
         fill(debug?0:150);
+        fill([ 0, 0, debug?0:(150-(150*Math.min(pegEnergy/5000, 1))) ]);
         ellipse(x, y, circleRadius * 2);
     },
     drawWall({ wall }) {

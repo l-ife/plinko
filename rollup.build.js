@@ -15,24 +15,27 @@ const defaults = {};
 const getNodeDefaults = (baseOptions) => assign({}, defaults, {
   format: 'cjs',
   external: [
+    'matter-js/build/matter.js',
     'alea',
     'lodash/forEach',
     'lodash/mapValues',
+    'lodash/assign',
     'lodash/get',
     'lodash/map'
   ],
   globals: {
-    'matter-js/build/matter.js': 'Matter',
+    'node_modules/matter-js/build/matter.js': 'Matter',
     alea: 'Alea',
     'lodash/forEach': 'forEach',
     'lodash/mapValues': 'mapValues',
+    'lodash/assign': 'assign',
     'lodash/get': 'get',
     'lodash/map': 'map'
   },
   plugins: [
     commonjs({
       namedExports: {
-        'matter-js/build/matter.js': [
+        'node_modules/matter-js/build/matter.js': [
           'Composite', 'Bodies', 'Body', 'Common', 'Composite', 'Engine', 'Events', 'Render', 'World'
         ]
       }

@@ -21,7 +21,7 @@ const dataDefinitions = {
         getInitialValue: () => 0,
     },
     energy: {
-        getInitialValue: () => 0,
+        getInitialValue: ({ initialEnergy = 0 }) => initialEnergy,
     },
     deathPositionX: {
         getValueToLog: ({ position: { x } }) => x/plinkoWidth
@@ -50,6 +50,9 @@ const dataDefinitions = {
     deathType: {
         getValueToLog: ({ data: { deathType }}) => deathType
     },
+    radius: {
+        getValueToLog: ({ circleRadius }) => circleRadius
+    },
 };
 
 const dataFunctions = {
@@ -71,7 +74,7 @@ export function getNewBeingData(contextualData) {
             getInitialValue(contextualData) :
             undefined;
     });
-    return assign(dataObject, dataFunctions);
+    return assign({}, dataObject, dataFunctions);
 };
 
 export function calculateDataFields(ball, contextualData) {

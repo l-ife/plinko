@@ -2,6 +2,6 @@ import Matter from 'matter-js/build/matter.js';
 
 export default Matter;
 
-const { Composite, Bodies, Body, Common, Engine, Events, Render, World } = Matter;
+const { Composite, Bodies, Body, Constraint, Common, Engine, Events, Render, World } = Matter;
 
-export { Composite, Bodies, Body, Common, Engine, Events, Render, World };
+export { Composite, Bodies, Body, Constraint, Common, Engine, Events, Render, World };

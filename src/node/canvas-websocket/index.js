@@ -167,7 +167,7 @@ bufferStream.pipe(child.stdin);
 
 let memoryMonitorWriteBuffer = createWriteStream(`./data/${filesName}-memory.csv`);
 
-const ticksPerFrame = 50;
+const ticksPerFrame = 50*5;
 let tickStep = 0;
 
 const FREQUENCY = 1000;

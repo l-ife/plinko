@@ -20,7 +20,7 @@ process.stdout.write(linePrefix);
 let proc = ffmpeg()
   .input(process.stdin)
   .inputFormat('png_pipe')
-  .inputOptions('-vsync', 'vfr')
+  // .inputOptions('-vsync', 'vfr')
   .noAudio()
 
   .output(`./data/${process.env.filesName}.mkv`)
@@ -52,6 +52,5 @@ let proc = ffmpeg()
       console.log(err.message); //this will likely return "code=1" not really useful
       console.log("stdout:\n" + stdout);
       console.log("stderr:\n" + stderr); //this will contain more detailed debugging info
-  });
-
-proc.run();
+  })
+  .run();

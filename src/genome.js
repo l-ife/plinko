@@ -27,11 +27,49 @@ function mutate({ parentValue, _boundsFn, mutates: { magnitude }, rate }, random
 }
 
 const genomeDefinition = {
-    ballRadius: {
+    startBallRadius: {
         type: GENETYPES.FLOAT,
-        bounds: [15, 50],
+        bounds: [5, 50],
         mutates: {
             magnitude: 0.5,
+            rate: {
+                bounds: [0, 1],
+                getNewBeingValue: () => 1,
+                mutates: { magnitude: 0.05, rate: 1 }
+            }
+        }
+    },
+    ballRadius: {
+        type: GENETYPES.FLOAT,
+        bounds: [5, 50],
+        mutates: {
+            magnitude: 0.5,
+            rate: {
+                bounds: [0, 1],
+                getNewBeingValue: () => 1,
+                mutates: { magnitude: 0.05, rate: 1 }
+            }
+        }
+    },
+    maxEnergyToDonateToMidstreamChild: {
+        type: GENETYPES.FLOAT,
+        bounds: [0, 1000000],
+        getNewBeingValue: () => 0,
+        mutates: {
+            magnitude: 300,
+            rate: {
+                bounds: [0, 1],
+                getNewBeingValue: () => 1,
+                mutates: { magnitude: 0.05, rate: 1 }
+            }
+        }
+    },
+    extraEnergyToPutIntoPeg: {
+        type: GENETYPES.FLOAT,
+        bounds: [0, 1000000],
+        getNewBeingValue: () => 0,
+        mutates: {
+            magnitude: 300,
             rate: {
                 bounds: [0, 1],
                 getNewBeingValue: () => 1,
@@ -164,7 +202,7 @@ const genomeDefinition = {
         type: GENETYPES.FLOAT,
         bounds: [0, 255],
         mutates: {
-            magnitude: 5,
+            magnitude: 2,
             rate: 1,
             dontLog: true
         }
@@ -214,10 +252,10 @@ export function getGenomeColumns(genome) {
 
 class GeneMissingBoundsOrDefault extends ExtendableError {}
 
-function getGeneDefault(geneDefintion = {}, random) {
+function getGeneDefault(geneDefintion = {}, genome = {}, random) {
     const { getNewBeingValue, bounds } = geneDefintion;
     if (getNewBeingValue) {
-        return getNewBeingValue({ definition: geneDefintion, random });
+        return getNewBeingValue({ definition: geneDefintion, genome, random });
     } else if (bounds) {
         const [ min, max ] = bounds;
         return valueBetween(min, max, random);
@@ -229,7 +267,7 @@ function getGeneDefault(geneDefintion = {}, random) {
 export function makeNewBeingGenome(random) {
     let genome = { mutationRates: {} };
     forEach(genomeDefinition, (geneDefintion, key) => {
-        genome[key] = getGeneDefault(geneDefintion, random);
+        genome[key] = getGeneDefault(geneDefintion, genome, random);
         if (geneDefintion.mutates) {
             const mutationRate = geneDefintion.mutates.rate
             genome.mutationRates[key] =

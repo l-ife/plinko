@@ -4,6 +4,7 @@ import TrailingData from './trailing-data';
 import Alea from 'alea';
 
 let pegSize = 14;
+const PEG_EATER_MINIMUM_ENERGY = 1750;
 let defaultBallRadius = 6;
 
 let plinkoWidth = 750;//*1.5;
@@ -14,7 +15,13 @@ let numOfPegs = 0;
 
 const oldAge = 75000;
 
-import { Bodies, Body, Composite, Engine, Events, World } from './matter-js-exports-shim';
+const areaToRadiusPercentageIncrease = areaPercentageIncrease => 0.2 * Math.sqrt( (25 * areaPercentageIncrease) + 25) - 1;
+const areaGivenRadius = radius => Math.PI * Math.pow(radius, 2);
+const radiusGivenArea = area   => Math.sqrt(area) / Math.sqrt(Math.PI);
+const MINIMUM_BALL_RADIUS = 5;
+const MINIMUM_BALL_BIRTH_ENERGY = areaGivenRadius(MINIMUM_BALL_RADIUS);
+
+import { Bodies, Body, Composite, Constraint, Engine, Events, World } from './matter-js-exports-shim';
 
 import { makeNewBeingGenome, makeChildGenome } from './genome';
 import { getNewBeingData } from './data';
@@ -86,14 +93,15 @@ const stepLogic = ({ beforeKillBall, afterCycle, drawBall, drawCorpse, drawPeg, 
     let numOfBalls = 0;
 
     bodies.forEach((n, i) => {
-        const { render: { visible }, circleRadius, position: { x, y }, genome: { ballRadius, growthRate } = {}, data: { energy } = {}, label } = n;
+        const { render: { visible }, circleRadius, position: { x, y }, genome: { ballRadius, growthRate } = {}, label } = n;
         if(!visible) return;
         if (label === 'ball') {
             numOfBalls++;
             const ballAge = (now - n.data.birthdate);
+            const areaOfCircle = areaGivenRadius(circleRadius);
             if (ballAge > n.genome.maxAge) {
-                if (energy > circleRadius && random() < 0.875) {
-                    n.data.changeEnergy(-1 * circleRadius);
+                if (n.data.energy > MINIMUM_BALL_BIRTH_ENERGY && random() < 0.875) {
+                    n.data.changeEnergy(-1 * MINIMUM_BALL_BIRTH_ENERGY);
                     spawnBall(n, TYPES_OF_BIRTH_AND_DEATH.BIRTH.DYING_BREATH_BABY);
                     numOfBalls++;
                 }
@@ -111,31 +119,36 @@ const stepLogic = ({ beforeKillBall, afterCycle, drawBall, drawCorpse, drawPeg, 
             }
 
             if (y > plinkoHeight * 1.3) {
-                killBall({ ball: n, beforeKillBall }, TYPES_OF_BIRTH_AND_DEATH.DEATH.FELL_OFF_BOTTOM);
-                numOfBalls--;
-                if (energy > circleRadius && random() < 0.875 /*&& getBallAgeSurvivalFactor() > 0.50*/) {
-                    n.data.changeEnergy(-1 * circleRadius);
+                if (n.data.energy > MINIMUM_BALL_BIRTH_ENERGY && random() < 0.875 /*&& getBallAgeSurvivalFactor() > 0.50*/) {
+                    n.data.changeEnergy(-1 * MINIMUM_BALL_BIRTH_ENERGY);
                     spawnBall(n, TYPES_OF_BIRTH_AND_DEATH.BIRTH.LOOPED_AROUND);
                     numOfBalls++;
                 }
+                killBall({ ball: n, beforeKillBall }, TYPES_OF_BIRTH_AND_DEATH.DEATH.FELL_OFF_BOTTOM);
+                numOfBalls--;
             } else if (random() < 0.05 && getBallAgeSurvivalFactor() > 0.55) {
                 let i = n.genome.midstreamBirthrate;
-                while (i >= 1 && energy > circleRadius) {
-                    n.data.changeEnergy(-1 * circleRadius);
-                    spawnBall(n, TYPES_OF_BIRTH_AND_DEATH.BIRTH.MIDSTREAM_SPAWN);
+                while (i >= 1 && n.data.energy > MINIMUM_BALL_BIRTH_ENERGY) {
+                    const energyLeftOver = n.data.energy - MINIMUM_BALL_BIRTH_ENERGY;
+                    const energyToGive = Math.min(energyLeftOver, n.genome.maxEnergyToDonateToMidstreamChild);
+                    n.data.changeEnergy(-1 * ( MINIMUM_BALL_BIRTH_ENERGY + energyToGive ));
+                    spawnBall(n, TYPES_OF_BIRTH_AND_DEATH.BIRTH.MIDSTREAM_SPAWN, { energyDonation: energyToGive });
                     numOfBalls++;
                     n.data.midstreamChildren++;
                     i--;
                 }
-                if (random() < i && energy > circleRadius) {
-                    n.data.changeEnergy(-1 * circleRadius);
-                    spawnBall(n, TYPES_OF_BIRTH_AND_DEATH.BIRTH.MIDSTREAM_SPAWN);
+                if (random() < i && n.data.energy > MINIMUM_BALL_BIRTH_ENERGY) {
+                    const energyLeftOver = n.data.energy - MINIMUM_BALL_BIRTH_ENERGY;
+                    const energyToGive = Math.min(energyLeftOver, n.genome.maxEnergyToDonateToMidstreamChild);
+                    n.data.changeEnergy(-1 * ( MINIMUM_BALL_BIRTH_ENERGY + energyToGive ));
+                    spawnBall(n, TYPES_OF_BIRTH_AND_DEATH.BIRTH.MIDSTREAM_SPAWN, { energyDonation: energyToGive });
                     numOfBalls++;
                     n.data.midstreamChildren++;
                 }
-            } else if (circleRadius < ballRadius && growthRate < energy && random() < 0.5) {
-
-                n.data.changeEnergy(-1 * growthRate);
+            } else if (circleRadius < ballRadius && (areaOfCircle * growthRate) < n.data.energy && random() < 0.5) {
+                const scaleFactor = (1 + areaToRadiusPercentageIncrease(growthRate));
+                Body.scale(n, scaleFactor, scaleFactor);
+                n.data.changeEnergy(-1 * (areaOfCircle * growthRate));
             }
             drawBall && drawBall({ ball: n });
         } else if (label === 'peg') {
@@ -166,7 +179,7 @@ const stepLogic = ({ beforeKillBall, afterCycle, drawBall, drawCorpse, drawPeg, 
 
 const getMurderAbility = (random, { eater, attacked }) => {
     // const typeFloat = eater.genome[typeField];
-    return eater.speed < attacked.speed;
+    return eater.circleRadius > attacked.circleRadius;
 };
 
 const cannibalismCheck = (random, { bodyA, bodyB }) => {
@@ -191,8 +204,6 @@ const setup = ({ sessionId, beforeKillBall } = {}) => {
     trailingData = TrailingData({ age: 3000 });
     // theBest = SortedBuffer(100);
 
-    const PEG_EATER_ENERGY = 1750;
-
     Events.on(engine, "collisionStart", ({ pairs, source : { timing: { timestamp: now } }, name }) => {
         pairs.forEach(({ bodyA, bodyB }) => {
             const { label: aLabel } = bodyA;
@@ -208,17 +219,34 @@ const setup = ({ sessionId, beforeKillBall } = {}) => {
                         (aWantsToEat && !bWantsToEat)
                     );
                     const [ eater, eaten ] = aEats ? [ bodyA, bodyB ] : [ bodyB, bodyA ];
-                    const { data: { energy } } = eater;
+                    const { genome: { maxEnergyToDonateToMidstreamChild }, data: { energy } } = eater;
                     const { circleRadius: consumedRadius, data: { energy: consumedEnergy } } = eaten;
                     killBall({ ball: eaten, beforeKillBall }, deathType);
                     areSameSpecies ? eater.data.ownEaten++ : eater.data.othersEaten++;
-                    eater.data.changeEnergy(consumedRadius + consumedEnergy);
-                    const { circleRadius, position: { x, y }, genome: { splitRate, becomePegRate } } = eater;
-                    if (energy > PEG_EATER_ENERGY && y > 0.2 && random() < becomePegRate) {
-                        killBall({ ball: eater, beforeKillBall }, TYPES_OF_BIRTH_AND_DEATH.DEATH.BECAME_PEG);
-                    } else if (energy > circleRadius && y > 0.2 && random() < splitRate) {
-                        spawnBall(eater, TYPES_OF_BIRTH_AND_DEATH.BIRTH.SPLIT, { xOveride: x, yOveride: y - circleRadius });
-                        eater.data.changeEnergy(-1 * circleRadius);
+                    const energyConsumed = areaGivenRadius(consumedRadius) + consumedEnergy;
+                    eater.data.changeEnergy(energyConsumed);
+                    const { circleRadius, position: { x, y }, genome: { splitRate, becomePegRate, extraEnergyToPutIntoPeg } } = eater;
+                    if (energy > (PEG_EATER_MINIMUM_ENERGY + extraEnergyToPutIntoPeg) && y > 0.2 && random() < becomePegRate) {
+                        killBall(
+                            { ball: eater, beforeKillBall },
+                            TYPES_OF_BIRTH_AND_DEATH.DEATH.BECAME_PEG,
+                            { energyPutIntoPeg: PEG_EATER_MINIMUM_ENERGY + extraEnergyToPutIntoPeg }
+                        );
+                    } else if (energy > MINIMUM_BALL_BIRTH_ENERGY && y > 0.2 && random() < splitRate) {
+                        const energyLeftOver = energy - MINIMUM_BALL_BIRTH_ENERGY;
+                        const energyToGive = Math.min(energyLeftOver, maxEnergyToDonateToMidstreamChild);
+                        eater.data.changeEnergy(-1 * ( MINIMUM_BALL_BIRTH_ENERGY + energyToGive ));
+                        const newBall = spawnBall(eater, TYPES_OF_BIRTH_AND_DEATH.BIRTH.SPLIT, { xOveride: x, yOveride: y - (circleRadius + MINIMUM_BALL_RADIUS), energyDonation: energyToGive });
+                        const constraint = Constraint.create({
+                            bodyA: eater,
+                            bodyB: newBall,
+                            // pointB: {
+                            //     x: 0,
+                            //     y: (-1 * (circleRadius + MINIMUM_BALL_RADIUS))
+                            // }
+                        });
+                        World.add(engine.world, constraint);
+                        console.log('there was a split');
                         eater.data.timesSplit++;
                     }
                 }
@@ -229,7 +257,8 @@ const setup = ({ sessionId, beforeKillBall } = {}) => {
                 const [ theBall, theCorpse ] = (aLabel === 'ball') ? [ bodyA, bodyB ] : [ bodyB, bodyA ];
                 const { data: { energy } } = theBall;
                 const { circleRadius: consumedRadius, data: { energy: consumedEnergy } } = theCorpse;
-                theBall.data.changeEnergy(consumedRadius + consumedEnergy)
+                const energyConsumed = areaGivenRadius(consumedRadius) + consumedEnergy;
+                theBall.data.changeEnergy(energyConsumed);
                 removeBody(theCorpse);
             } else if (
                 (aLabel === 'peg' && bLabel === 'ball') ||
@@ -237,9 +266,10 @@ const setup = ({ sessionId, beforeKillBall } = {}) => {
             ) {
                 const [ theBall, thePeg ] = (aLabel === 'ball') ? [ bodyA, bodyB ] : [ bodyB, bodyA ];
                 const { genome: { eatPegRate }, data: { energy } } = theBall;
-                if (energy > PEG_EATER_ENERGY && random() < eatPegRate) {
+                const { pegEnergy } = thePeg;
+                if (energy > pegEnergy && random() < eatPegRate) {
                     removeBody(thePeg);
-                    theBall.data.changeEnergy(-1 * PEG_EATER_ENERGY);
+                    theBall.data.changeEnergy(-1 * pegEnergy);
                     theBall.data.pegsEaten++;
                 }
             }
@@ -367,18 +397,19 @@ function convertToCorpse(ball) {
     ball.data = { energy };
 }
 
-function convertToPeg(ball) {
+function convertToPeg(ball, energyPutIntoPeg = PEG_EATER_MINIMUM_ENERGY) {
     const { circleRadius } = ball;
     ball.label = 'peg';
     ball.render.fillStyle = undefined;
     ball.genome = undefined;
     ball.data = undefined;
+    ball.pegEnergy = energyPutIntoPeg;
     const scaleFactor = pegSize/circleRadius;
     Body.scale(ball, scaleFactor, scaleFactor);
     Body.setStatic(ball, true);
 }
 
-function killBall({ ball, beforeKillBall }, deathType) {
+function killBall({ ball, beforeKillBall }, deathType, { energyPutIntoPeg } = {}) {
     if (beforeKillBall) {
         ball.data.deathType = deathType;
         beforeKillBall && beforeKillBall(ball);
@@ -393,20 +424,26 @@ function killBall({ ball, beforeKillBall }, deathType) {
             removeBody(ball);
             break;
         case TYPES_OF_BIRTH_AND_DEATH.DEATH.BECAME_PEG:
-            convertToPeg(ball);
+            convertToPeg(ball, energyPutIntoPeg);
             break;
         default:
             convertToCorpse(ball);
     }
 }
 
-function spawnBall(parent, birthType, { xOveride, yOveride } = {}) {
+function spawnBall(parent, birthType, { xOveride, yOveride, energyDonation = 0 } = {}) {
     const genome = ( parent ? makeChildGenome(parent, random) : makeNewBeingGenome(random) );
-    const { ballRadius, hue, position, restitution } = genome;
-    addCircle({
+    const { ballRadius, startBallRadius, hue, position, restitution } = genome;
+    const extraEnergyNeeded = areaGivenRadius(startBallRadius) - MINIMUM_BALL_BIRTH_ENERGY;
+    // I just unconstrained startBallRadius and ballRadius because they couldn't be mutually constrained
+    // Fix up this logic to constraint them at runtime
+    const actualStartRadius = (extraEnergyNeeded > energyDonation) ?
+                                ( Math.sqrt( (energyDonation / Math.PI) + Math.pow(MINIMUM_BALL_RADIUS, 2) ) ) : startBallRadius;
+    const energy = (extraEnergyNeeded > energyDonation) ? 0 : (energyDonation - extraEnergyNeeded);
+    return addCircle({
         x: xOveride || (plinkoWidth * position),
         y: yOveride || -10,
-        r: ballRadius,
+        r: actualStartRadius,
         options: {
             label: 'ball',
             render: { fillStyle: [ hue, 255, 255 ] },
@@ -416,7 +453,8 @@ function spawnBall(parent, birthType, { xOveride, yOveride } = {}) {
                 parent,
                 now: getTime(),
                 beginTime,
-                birthType
+                birthType,
+                initialEnergy: energy
             }),
         }
     });

@@ -1,6 +1,7 @@
 import forEach from 'lodash/forEach';
 import map from 'lodash/map';
 import mapValues from 'lodash/mapValues';
+import assign from 'lodash/assign';
 
 // import plinko from './plinko';
 // const { consts: { plinkoWidth, plinkoHeight } } = plinko;
@@ -51,16 +52,26 @@ const dataDefinitions = {
     },
 };
 
+const dataFunctions = {
+    changeEnergy(energyChange) {
+        this.energy += energyChange;
+        if (energyChange > 0) {
+            this.totalLifeEnergy += energyChange;
+        }
+    }
+};
+
 export function getDataColumnHeaders() {
     return map(dataDefinitions, (dataDefinition, key) => key);
 };
 
 export function getNewBeingData(contextualData) {
-    return mapValues(dataDefinitions, ({ getInitialValue }) => {
+    const dataObject = mapValues(dataDefinitions, ({ getInitialValue }) => {
         return getInitialValue ?
             getInitialValue(contextualData) :
             undefined;
     });
+    return assign(dataObject, dataFunctions);
 };
 
 export function calculateDataFields(ball, contextualData) {

@@ -48,20 +48,17 @@ const getBrowserDefaults = (baseOptions, livereloadOptions) => {
     format: 'iife',
     sourceMap: true,
     plugins: [
-      nodeBuiltins(),
-      nodeGlobals(),
       resolve({
-        // jsnext: true,
-        module: true,
-        // browser: true,
-        // main: true,
-        // modulesOnly: true,
+        jsnext: true,
+        browser: true
       }),
       commonjs(),
-      // uglify(),
       babel({
         exclude: ['node_modules/**', 'data/**']
       }),
+      // These must go at the bottom
+      nodeBuiltins(),
+      nodeGlobals(),
     ]
   };
   if (livereloadOptions) {

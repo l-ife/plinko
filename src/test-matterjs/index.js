@@ -1,6 +1,6 @@
 import range from 'lodash/range';
 import { Bodies, Engine, Events, Render, World } from '../matter-js-exports-shim';
-const { poisson, beta, betaRight, betaLeft } = require('./distributions');
+const { betaLeft } = require('./distributions');
 
 // create an engine
 var engine = Engine.create();

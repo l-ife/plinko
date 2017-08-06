@@ -70,7 +70,6 @@ window.setup = () => {
     createCanvas(window.windowWidth, window.windowHeight);
 };
 
-let count = 0;
 window.draw = () => {
     background(255);
     strokeWeight(0);
@@ -78,12 +77,6 @@ window.draw = () => {
     translate((width / 2) - (plinkoWidth / 2), 100);
 
     stepLogic(stepLogicHandlers);
-    if(count>1000){
-        console.log(engine.pairs.list.length);
-        count = 0;
-    } else {
-        count++;
-    }
 };
 
 window.windowResized = () => {

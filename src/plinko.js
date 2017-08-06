@@ -93,7 +93,7 @@ const stepLogic = ({ beforeKillBall, afterCycle, drawBall, drawCorpse, drawPeg, 
             const ballAge = (now - n.data.birthdate);
             if (ballAge > n.genome.maxAge) {
                 if (energy > circleRadius && random() < 0.875) {
-                    n.data.energy -= circleRadius;
+                    n.data.changeEnergy(-1 * circleRadius);
                     spawnBall(n, TYPES_OF_BIRTH_AND_DEATH.BIRTH.DYING_BREATH_BABY);
                     numOfBalls++;
                 }
@@ -114,28 +114,28 @@ const stepLogic = ({ beforeKillBall, afterCycle, drawBall, drawCorpse, drawPeg, 
                 killBall({ ball: n, beforeKillBall }, TYPES_OF_BIRTH_AND_DEATH.DEATH.FELL_OFF_BOTTOM);
                 numOfBalls--;
                 if (energy > circleRadius && random() < 0.875 /*&& getBallAgeSurvivalFactor() > 0.50*/) {
-                    n.data.energy -= circleRadius;
+                    n.data.changeEnergy(-1 * circleRadius);
                     spawnBall(n, TYPES_OF_BIRTH_AND_DEATH.BIRTH.LOOPED_AROUND);
                     numOfBalls++;
                 }
             } else if (random() < 0.05 && getBallAgeSurvivalFactor() > 0.55) {
                 let i = n.genome.midstreamBirthrate;
                 while (i >= 1 && energy > circleRadius) {
-                    n.data.energy -= circleRadius;
+                    n.data.changeEnergy(-1 * circleRadius);
                     spawnBall(n, TYPES_OF_BIRTH_AND_DEATH.BIRTH.MIDSTREAM_SPAWN);
                     numOfBalls++;
                     n.data.midstreamChildren++;
                     i--;
                 }
                 if (random() < i && energy > circleRadius) {
-                    n.data.energy -= circleRadius;
+                    n.data.changeEnergy(-1 * circleRadius);
                     spawnBall(n, TYPES_OF_BIRTH_AND_DEATH.BIRTH.MIDSTREAM_SPAWN);
                     numOfBalls++;
                     n.data.midstreamChildren++;
                 }
             } else if (circleRadius < ballRadius && growthRate < energy && random() < 0.5) {
 
-                n.data.energy -= growthRate;
+                n.data.changeEnergy(-1 * growthRate);
             }
             drawBall && drawBall({ ball: n });
         } else if (label === 'peg') {
@@ -191,7 +191,7 @@ const setup = ({ sessionId, beforeKillBall } = {}) => {
     trailingData = TrailingData({ age: 3000 });
     // theBest = SortedBuffer(100);
 
-    const pegEaterEnergy = 1750;
+    const PEG_EATER_ENERGY = 1750;
 
     Events.on(engine, "collisionStart", ({ pairs, source : { timing: { timestamp: now } }, name }) => {
         pairs.forEach(({ bodyA, bodyB }) => {
@@ -208,17 +208,17 @@ const setup = ({ sessionId, beforeKillBall } = {}) => {
                         (aWantsToEat && !bWantsToEat)
                     );
                     const [ eater, eaten ] = aEats ? [ bodyA, bodyB ] : [ bodyB, bodyA ];
+                    const { data: { energy } } = eater;
                     const { circleRadius: consumedRadius, data: { energy: consumedEnergy } } = eaten;
                     killBall({ ball: eaten, beforeKillBall }, deathType);
                     areSameSpecies ? eater.data.ownEaten++ : eater.data.othersEaten++;
-                    eater.data.energy += (consumedRadius + consumedEnergy);
-                    eater.data.totalLifeEnergy += (consumedRadius + consumedEnergy);
+                    eater.data.changeEnergy(consumedRadius + consumedEnergy);
                     const { circleRadius, position: { x, y }, genome: { splitRate, becomePegRate } } = eater;
-                    if (eater.data.energy > pegEaterEnergy && y > 0.2 && random() < becomePegRate) {
+                    if (energy > PEG_EATER_ENERGY && y > 0.2 && random() < becomePegRate) {
                         killBall({ ball: eater, beforeKillBall }, TYPES_OF_BIRTH_AND_DEATH.DEATH.BECAME_PEG);
-                    } else if (eater.data.energy > circleRadius && y > 0.2 && random() < splitRate) {
-                        spawnBall(eater, TYPES_OF_BIRTH_AND_DEATH.BIRTH.SPLIT, { xOveride: x, yOveride: y-circleRadius });
-                        eater.data.energy -= circleRadius;
+                    } else if (energy > circleRadius && y > 0.2 && random() < splitRate) {
+                        spawnBall(eater, TYPES_OF_BIRTH_AND_DEATH.BIRTH.SPLIT, { xOveride: x, yOveride: y - circleRadius });
+                        eater.data.changeEnergy(-1 * circleRadius);
                         eater.data.timesSplit++;
                     }
                 }
@@ -227,18 +227,19 @@ const setup = ({ sessionId, beforeKillBall } = {}) => {
                 (bLabel === 'corpse' && aLabel === 'ball')
             ) {
                 const [ theBall, theCorpse ] = (aLabel === 'ball') ? [ bodyA, bodyB ] : [ bodyB, bodyA ];
+                const { data: { energy } } = theBall;
                 const { circleRadius: consumedRadius, data: { energy: consumedEnergy } } = theCorpse;
-                theBall.data.energy += (consumedRadius + consumedEnergy);
-                theBall.data.totalLifeEnergy += (consumedRadius + consumedEnergy);
+                theBall.data.changeEnergy(consumedRadius + consumedEnergy)
                 removeBody(theCorpse);
             } else if (
                 (aLabel === 'peg' && bLabel === 'ball') ||
                 (bLabel === 'peg' && aLabel === 'ball')
             ) {
                 const [ theBall, thePeg ] = (aLabel === 'ball') ? [ bodyA, bodyB ] : [ bodyB, bodyA ];
-                if (theBall.data.energy > pegEaterEnergy && random() < theBall.genome.eatPegRate) {
+                const { genome: { eatPegRate }, data: { energy } } = theBall;
+                if (energy > PEG_EATER_ENERGY && random() < eatPegRate) {
                     removeBody(thePeg);
-                    theBall.data.energy -= pegEaterEnergy;
+                    theBall.data.changeEnergy(-1 * PEG_EATER_ENERGY);
                     theBall.data.pegsEaten++;
                 }
             }
@@ -262,6 +263,7 @@ const setup = ({ sessionId, beforeKillBall } = {}) => {
     //         });
     //     }
     // }
+
     const boxWidth = plinkoWidth*3;
     const boxBottom = plinkoHeight-450;
     const boxHeight = 500;
@@ -288,16 +290,6 @@ const setup = ({ sessionId, beforeKillBall } = {}) => {
     };
 }
 
-// function addBody(...bodies) {
-//     World.add(engine.world, ...bodies);
-// }
-
-// function removeBody(...bodies) {
-//     World.remove(engine.world, ...bodies);
-// }
-
-// let dormantBodies = [];
-
 function addBody(body) {
     World.add(engine.world, body);
 }
@@ -312,12 +304,8 @@ function addCircle({ x = 0, y = 0, r = 10, options = {} } = {}) {
     // if (dormantBodies.length > 0) {
     //     let dormantBody = dormantBodies.pop();
     //     Body.set(dormantBody, Common.extend(dormantBody, options, {
-    //         id: Common.nextId(),
-    //         position: { x, y },
-    //         angle: 0,
-    //         isSleeping: false,
-    //         speed: 0,
-    //         render: { visible: true }
+    //         id: Common.nextId(), position: { x, y }, angle: 0,
+    //         isSleeping: false, speed: 0, render: { visible: true }
     //     }));
     //     const scaleFactor = r/dormantBody.circleRadius;
     //     Body.scale(dormantBody, scaleFactor, scaleFactor);

@@ -1,4 +1,4 @@
-const Matter = require('matter-js/build/matter.js');
+import Matter from 'matter-js/build/matter.js';
 
 export default Matter;
 

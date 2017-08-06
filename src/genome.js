@@ -29,7 +29,7 @@ function mutate({ parentValue, _boundsFn, mutates: { magnitude }, rate }, random
 const genomeDefinition = {
     ballRadius: {
         type: GENETYPES.FLOAT,
-        bounds: [5, 50],
+        bounds: [15, 50],
         mutates: {
             magnitude: 0.5,
             rate: {

@@ -2,9 +2,7 @@ import { uuid } from '../utils';
 
 import Alea from 'alea';
 
-let pegSize = 14;
-const PEG_EATER_MINIMUM_ENERGY = 1750;
-let defaultBallRadius = 6;
+const MAX_SCALE_FACTOR = 3;
 
 let plinkoWidth = 750;//*1.5;
 let plinkoHeight = 1800;
@@ -17,7 +15,6 @@ const areaGivenRadius = radius => Math.PI * Math.pow(radius, 2);
 const radiusGivenArea = area   => Math.sqrt(area) / Math.sqrt(Math.PI);
 
 const MINIMUM_BALL_RADIUS = 5;
-const MINIMUM_BALL_BIRTH_ENERGY = areaGivenRadius(MINIMUM_BALL_RADIUS);
 
 import { Bodies, Body, Composite, Constraint, Engine, Events, World } from '../matter-js-exports-shim';
 
@@ -25,21 +22,12 @@ import { makeNewBeingGenome, makeChildGenome } from '../genome';
 
 let random;
 
-// add plinko sensors
-// create genome:
-//  {
-//      drop: {
-//          position: [calcers],
-//  calcers = [
-//      uniform(start, end),
-//      normal(mean, variance),
-//      exact(x),
-//      roundTo(notch)
-//  ]
-
 let engine;
 let beginTime;
-// let theBest;
+
+function valueBetween(min, max, random) {
+    return ( min + (random() * (max - min)) );
+}
 
 const getTime = (passedInEngine) => (passedInEngine || engine).timing.timestamp;
 
@@ -48,8 +36,8 @@ const stepLogic = ({ beforeKillBall, afterCycle, drawBall, drawCorpse, drawPeg, 
     let bodies = Composite.allBodies(engine.world);
 
     const now = getTime();
-    const baselineCount = 125*2;
-    const maxCount = 125*2;
+    const baselineCount = 125*MAX_SCALE_FACTOR;
+    const maxCount = 125*MAX_SCALE_FACTOR;
     let numOfBalls = 0;
 
     bodies.forEach((n, i) => {
@@ -75,16 +63,8 @@ const stepLogic = ({ beforeKillBall, afterCycle, drawBall, drawCorpse, drawPeg, 
                 numOfBalls--;
             }
             drawBall && drawBall({ ball: n });
-        } else if (label === 'peg') {
-            drawPeg && drawPeg({ peg: n });
         } else if (label === 'wall') {
             drawWall && drawWall({ wall: n });
-        } else if (label === 'corpse') {
-            if (y > plinkoHeight * 1.3) {
-                removeBody(n);
-                return;
-            }
-            drawCorpse && drawCorpse({ corpse: n });
         }
     });
 
@@ -104,7 +84,7 @@ const stepLogic = ({ beforeKillBall, afterCycle, drawBall, drawCorpse, drawPeg, 
 const setup = ({ sessionId, beforeKillBall } = {}) => {
     random = new Alea(sessionId);
     engine = Engine.create();
-    engine.constraintIterations = 4;
+    engine.constraintIterations = 3;
     beginTime = getTime();
 
     Events.on(engine, "collisionStart", ({ pairs, source : { timing: { timestamp: now } }, name }) => {
@@ -123,35 +103,9 @@ const setup = ({ sessionId, beforeKillBall } = {}) => {
                         bodyB.data.energy += aEnergy;
                     }
                 }
-            } else if (
-                (aLabel === 'corpse' && bLabel === 'ball') ||
-                (bLabel === 'corpse' && aLabel === 'ball')
-            ) {
-            } else if (
-                (aLabel === 'peg' && bLabel === 'ball') ||
-                (bLabel === 'peg' && aLabel === 'ball')
-            ) {
             }
         })
     });
-
-    // let offsetX = 0.5 / countX * plinkoWidth;
-    // let offsetY = 0.5 / countY * plinkoHeight + 50;
-
-    // for(let y = 0; y < countY; y++) {
-    //     for(let x = 0; x < countX - y % 2 ? -1 : 0; x++) {
-    //         numOfPegs++;
-    //         addCircle({
-    //             x: x / countX * plinkoWidth + offsetX * (!(y % 2) ? 1 : 2),
-    //             y: y / countY * plinkoHeight * (2 / 3) + offsetY,
-    //             r: pegSize,
-    //             options: {
-    //                 isStatic: true,
-    //                 label: 'peg'
-    //             }
-    //         });
-    //     }
-    // }
 
     const boxWidth = plinkoWidth*3;
     const boxBottom = plinkoHeight-450;
@@ -172,6 +126,13 @@ const setup = ({ sessionId, beforeKillBall } = {}) => {
         x: rightX, y: boxBottom-(boxHeight/2), w: wallThickness, h: boxHeight,
         options: { isStatic: true, label: 'wall' }
     });
+
+    // for (var hue = 0; hue <= 360; hue++) {
+    //     addRectangle({
+    //         x: leftX+(hue*(boxWidth/360)), y: boxBottom - 300, w: boxWidth/360, h: wallThickness,
+    //         options: { isStatic: true, label: 'wall', data: { hue } }
+    //     })
+    // }
 
     return {
         engine,
@@ -194,32 +155,9 @@ function addCircle({ x = 0, y = 0, r = 10, options = {} } = {}) {
 }
 
 function addRectangle({ x = 0, y = 0, w = 10, h = 10, options = {} } = {}) {
-    // TODO: Use the dormant bodies too
     let body = Bodies.rectangle(x, y, w, h, options);
     addBody(body);
     return body;
-}
-
-function convertToCorpse(ball) {
-    const { data: { energy } } = ball;
-    // TODO: Write this for perfomrance
-    ball.label = 'corpse';
-    ball.restitution = 0.95;
-    ball.render.fillStyle = undefined;
-    ball.genome = undefined;
-    ball.data = { energy };
-}
-
-function convertToPeg(ball, energyPutIntoPeg = PEG_EATER_MINIMUM_ENERGY) {
-    const { circleRadius } = ball;
-    ball.label = 'peg';
-    ball.render.fillStyle = undefined;
-    ball.genome = undefined;
-    ball.data = undefined;
-    ball.pegEnergy = energyPutIntoPeg;
-    const scaleFactor = pegSize/circleRadius;
-    Body.scale(ball, scaleFactor, scaleFactor);
-    Body.setStatic(ball, true);
 }
 
 function killBall({ ball, beforeKillBall }) {
@@ -231,9 +169,9 @@ function killBall({ ball, beforeKillBall }) {
 
 function spawnBall(parent = {}, { xOveride, yOveride } = {}) {
     const { circleRadius: parentCircleRadius, data: { hue, group, brightness } = {} } = parent;
-    const newBallRadius = parentCircleRadius ? Math.max(parentCircleRadius + ((random() * 20) - 18.5), defaultBallRadius) : defaultBallRadius + (random()*60/2);
-    const defaultedNewHue = hue ? (hue + 2) : (random() * 255);
-    const wrappedNewHue = (defaultedNewHue>255) ? defaultedNewHue - 255 : defaultedNewHue;
+    const newBallRadius = parentCircleRadius ? Math.max(parentCircleRadius + valueBetween(-6.5, 1.5, random), MINIMUM_BALL_RADIUS) : MINIMUM_BALL_RADIUS + (random()*60/MAX_SCALE_FACTOR);
+    const defaultedNewHue = hue ? (hue + 1.5) : (random() * 360);
+    const wrappedNewHue = (defaultedNewHue>360) ? defaultedNewHue - 360 : defaultedNewHue;
     return addCircle({
         x: xOveride || (plinkoWidth * ( (3*random()) - 1 )),
         y: yOveride || -10,
@@ -258,8 +196,6 @@ export default {
         getTime
     },
     consts: {
-        pegSize,
-        defaultBallRadius,
         plinkoWidth,
         plinkoHeight,
         countX,

@@ -103,9 +103,10 @@ const setupCanvasAndDrawHandlers = () => {
             ctx.fill();
         },
         drawWall({ wall }) {
+            const { data: { hue } = {} } = wall;
             let xysArray = wall.vertices
                 .map(({ x, y }) => [margins.x+x, margins.top+y]);
-            ctx.fillStyle = `rgb(0,0,0)`;
+            ctx.fillStyle = `hsl(${hue||0},${hue?100:0}%,${hue?50:0}%)`;
             quad(ctx, xysArray);
             ctx.fill();
         }

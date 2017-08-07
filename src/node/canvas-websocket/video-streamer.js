@@ -7,7 +7,6 @@ process.stdin.on('error', function(err) {
 });
 
 const linePrefix = `${process.env.filesName} `;
-process.stdout.write(linePrefix);
 
 // YouTube
 // const SERVER="x.rtmp.youtube.com/live2";
@@ -20,7 +19,6 @@ process.stdout.write(linePrefix);
 let proc = ffmpeg()
   .input(process.stdin)
   .inputFormat('png_pipe')
-  // .inputOptions('-vsync', 'vfr')
   .noAudio()
 
   .output(`./data/${process.env.filesName}.mkv`)
@@ -41,6 +39,10 @@ let proc = ffmpeg()
   //   .videoBitrate('3000k')
   //   .fps(5)
 
+  .on('start', function(command) {
+    process.stdout.write(`Running: ${command}\n`);
+    process.stdout.write(linePrefix);
+  })
   .on('progress', function(info) {
     readline.cursorTo(process.stdout, linePrefix.length);
     process.stdout.write('progress ' + JSON.stringify(info));

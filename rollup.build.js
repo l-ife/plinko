@@ -36,7 +36,7 @@ const getNodeDefaults = (baseOptions) => assign({}, defaults, {
     commonjs({
       namedExports: {
         'node_modules/matter-js/build/matter.js': [
-          'Composite', 'Bodies', 'Body', 'Common', 'Composite', 'Engine', 'Events', 'Render', 'World'
+          'Composite', 'Bodies', 'Body', 'Common', 'Engine', 'Events', 'Render', 'World'
         ]
       }
     }),

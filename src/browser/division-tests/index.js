@@ -3,7 +3,7 @@ import { getUrlArguments } from '../browser-utils';
 
 import { Bodies, Body, Engine, Events, World } from '../../matter-js-exports-shim';
 
-import simulation from './simulation';
+import simulation from '../../division-tests/simulation';
 const { setup, stepLogic, utils: { getTime }, consts: { plinkoWidth, plinkoHeight } } = simulation;
 
 let engine;
@@ -18,7 +18,7 @@ const stepLogicHandlers = {
     beforeKillBall(ball) {},
     drawBall({ ball }) {
         const { debug, render: { fillStyle }, position: { x, y }, circleRadius, data: { hue, brightness } } = ball;
-        fill([ hue, 255, brightness ]);
+        fill([ hue, 255, brightness*255 ]);
         ellipse(x, y, circleRadius * 2);
     },
     drawWall({ wall }) {

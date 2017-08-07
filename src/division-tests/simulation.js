@@ -1,4 +1,4 @@
-import { uuid } from '../../utils';
+import { uuid } from '../utils';
 
 import Alea from 'alea';
 
@@ -19,9 +19,9 @@ const radiusGivenArea = area   => Math.sqrt(area) / Math.sqrt(Math.PI);
 const MINIMUM_BALL_RADIUS = 5;
 const MINIMUM_BALL_BIRTH_ENERGY = areaGivenRadius(MINIMUM_BALL_RADIUS);
 
-import { Bodies, Body, Composite, Constraint, Engine, Events, World } from '../../matter-js-exports-shim';
+import { Bodies, Body, Composite, Constraint, Engine, Events, World } from '../matter-js-exports-shim';
 
-import { makeNewBeingGenome, makeChildGenome } from '../../genome';
+import { makeNewBeingGenome, makeChildGenome } from '../genome';
 
 let random;
 
@@ -48,8 +48,8 @@ const stepLogic = ({ beforeKillBall, afterCycle, drawBall, drawCorpse, drawPeg, 
     let bodies = Composite.allBodies(engine.world);
 
     const now = getTime();
-    const baselineCount = 125;
-    const maxCount = 125;
+    const baselineCount = 125*2;
+    const maxCount = 125*2;
     let numOfBalls = 0;
 
     bodies.forEach((n, i) => {
@@ -104,6 +104,7 @@ const stepLogic = ({ beforeKillBall, afterCycle, drawBall, drawCorpse, drawPeg, 
 const setup = ({ sessionId, beforeKillBall } = {}) => {
     random = new Alea(sessionId);
     engine = Engine.create();
+    engine.constraintIterations = 4;
     beginTime = getTime();
 
     Events.on(engine, "collisionStart", ({ pairs, source : { timing: { timestamp: now } }, name }) => {
@@ -230,8 +231,8 @@ function killBall({ ball, beforeKillBall }) {
 
 function spawnBall(parent = {}, { xOveride, yOveride } = {}) {
     const { circleRadius: parentCircleRadius, data: { hue, group, brightness } = {} } = parent;
-    const newBallRadius = parentCircleRadius ? Math.max(parentCircleRadius, defaultBallRadius) : defaultBallRadius + (random()*60);
-    const defaultedNewHue = hue ? (hue + 5) : (random() * 255);
+    const newBallRadius = parentCircleRadius ? Math.max(parentCircleRadius + ((random() * 20) - 18.5), defaultBallRadius) : defaultBallRadius + (random()*60/2);
+    const defaultedNewHue = hue ? (hue + 2) : (random() * 255);
     const wrappedNewHue = (defaultedNewHue>255) ? defaultedNewHue - 255 : defaultedNewHue;
     return addCircle({
         x: xOveride || (plinkoWidth * ( (3*random()) - 1 )),
@@ -244,7 +245,7 @@ function spawnBall(parent = {}, { xOveride, yOveride } = {}) {
                 group: group || parseInt(random()*5000),
                 energy: areaGivenRadius(newBallRadius),
                 hue: wrappedNewHue,
-                brightness: (brightness !== undefined) ? Math.max(brightness - 5, 0) : 255
+                brightness: ((brightness !== undefined) ? Math.max(brightness - 0.01, 0.25) : 0.75)
             }
         }
     });

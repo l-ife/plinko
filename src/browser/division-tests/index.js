@@ -17,7 +17,7 @@ console.log(sessionId);
 const stepLogicHandlers = {
     beforeKillBall(ball) {},
     drawBall({ ball }) {
-        const { debug, render: { fillStyle }, position: { x, y }, circleRadius, data: { hue, brightness } } = ball;
+        const { debug, render: { fillStyle }, position: { x, y }, circleRadius, genome: { hue, brightness } } = ball;
         fill([ hue, 255, brightness*255 ]);
         ellipse(x, y, circleRadius * 2);
     },

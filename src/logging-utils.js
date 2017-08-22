@@ -1,7 +1,7 @@
 import { Composite } from './matter-js-exports-shim';
 
-import { getGenomeColumnHeaders, getGenomeColumns } from './genome';
-import { calculateDataFields, getDataColumnHeaders, getDataColumns } from './data';
+import { getGenomeColumnHeaders, getGenomeColumns } from './plinko/genome';
+import { calculateDataFields, getDataColumnHeaders, getDataColumns } from './plinko/data';
 
 export const theBookOfPlinkoersHeaders =
     getGenomeColumnHeaders().concat(getDataColumnHeaders());

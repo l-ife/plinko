@@ -23,8 +23,8 @@ const MINIMUM_BALL_BIRTH_ENERGY = areaGivenRadius(MINIMUM_BALL_RADIUS);
 
 import { Bodies, Body, Composite, Constraint, Engine, Events, World } from './matter-js-exports-shim';
 
-import { makeNewBeingGenome, makeChildGenome } from './genome';
-import { getNewBeingData } from './data';
+import { makeNewBeingGenome, makeChildGenome } from './plinko/genome';
+import { getNewBeingData } from './plinko/data';
 
 let random;
 
@@ -246,7 +246,7 @@ const setup = ({ sessionId, beforeKillBall } = {}) => {
                             // }
                         });
                         World.add(engine.world, constraint);
-                        console.log('there was a split');
+                        // console.log('there was a split');
                         eater.data.timesSplit++;
                     }
                 }

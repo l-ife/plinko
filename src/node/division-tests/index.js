@@ -97,7 +97,7 @@ const setupCanvasAndDrawHandlers = () => {
             background(ctx);
         },
         drawBall({ ball }) {
-            const { debug, render: { fillStyle }, position: { x, y }, circleRadius, data: { hue, brightness } } = ball;
+            const { debug, render: { fillStyle }, position: { x, y }, circleRadius, genome: { hue, brightness } } = ball;
             ctx.fillStyle = `hsl(${hue},100%,${(brightness*100)}%)`;
             ellipse(ctx, margins.x+x, margins.top+y, circleRadius * 2);
             ctx.fill();

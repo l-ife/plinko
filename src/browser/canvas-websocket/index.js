@@ -9,14 +9,18 @@ const updateState = state => {
     document.getElementById('state').innerHTML = (state ? 'Connected' : 'Failed');
 }
 
-let ws;
+let wss = {};
 const getWsConnection = () => {
     return new Promise((resolve, reject) => {
-        if (ws) return resolve(ws);
-        ws = new WebSocket(`ws://localhost:${port}`);
-        Object.assign(ws, {
-            onopen() { resolve(ws); updateState(true); },
-            onclose() { reject('websocket closed', ws); updateState(false); },
+        if (wss[port]) {
+            updateState(true);
+            return resolve(wss[port]);
+        }
+        updateState(false);
+        wss[port] = new WebSocket(`ws://localhost:${port}`);
+        Object.assign(wss[port], {
+            onopen() { resolve(wss[port]); updateState(true); },
+            onclose() { reject('websocket closed', wss[port]); updateState(false); },
             onerror(err) { reject(err); updateState(false); },
             onmessage({ data, type }) {
                 if (type === 'message') document.querySelector('img').setAttribute('src', data);

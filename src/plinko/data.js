@@ -3,8 +3,8 @@ import map from 'lodash/map';
 import mapValues from 'lodash/mapValues';
 import assign from 'lodash/assign';
 
-// import plinko from './plinko';
-// const { consts: { plinkoWidth, plinkoHeight } } = plinko;
+import { Data } from '../utils/data';
+
 let plinkoWidth = 750;
 let plinkoHeight = 1800;
 
@@ -64,28 +64,21 @@ const dataFunctions = {
     }
 };
 
+const plinkoDataDriver = new Data(dataDefinitions, dataFunctions);
+
 export function getDataColumnHeaders() {
-    return map(dataDefinitions, (dataDefinition, key) => key);
+    return plinkoDataDriver.getDataColumnHeaders();
 };
 
 export function getNewBeingData(contextualData) {
-    const dataObject = mapValues(dataDefinitions, ({ getInitialValue }) => {
-        return getInitialValue ?
-            getInitialValue(contextualData) :
-            undefined;
-    });
-    return assign({}, dataObject, dataFunctions);
+    return plinkoDataDriver.getNewBeingData(contextualData);
 };
 
 export function calculateDataFields(ball, contextualData) {
-    let ballData = Object.assign({}, ball.data);
-    forEach(dataDefinitions, (dataDefinition, key) => {
-        const { getValueToLog } = dataDefinition;
-        if (getValueToLog) ballData[key] = getValueToLog(ball, contextualData);
-    });
-    return ballData;
+    return plinkoDataDriver.calculateDataFields(ball, contextualData);
 };
 
 export function getDataColumns(ballData) {
-    return map(dataDefinitions, (dataDefinition, key) => +(ballData[key] && ballData[key].toFixed?ballData[key].toFixed(4):ballData[key]));
+    return plinkoDataDriver.getDataColumns(ballData);
 };
+

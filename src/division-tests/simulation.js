@@ -18,16 +18,15 @@ const MINIMUM_BALL_RADIUS = 5;
 
 import { Bodies, Body, Composite, Constraint, Engine, Events, World } from '../matter-js-exports-shim';
 
-import { makeNewBeingGenome, makeChildGenome } from '../genome';
+import { valueBetween, bounds } from '../utils';
+
+import { makeNewBeingGenome, makeChildGenome } from './genome';
+import { getNewBeingData } from './data';
 
 let random;
 
 let engine;
 let beginTime;
-
-function valueBetween(min, max, random) {
-    return ( min + (random() * (max - min)) );
-}
 
 const getTime = (passedInEngine) => (passedInEngine || engine).timing.timestamp;
 
@@ -36,29 +35,44 @@ const stepLogic = ({ beforeKillBall, afterCycle, drawBall, drawCorpse, drawPeg, 
     let bodies = Composite.allBodies(engine.world);
 
     const now = getTime();
-    const baselineCount = 125*MAX_SCALE_FACTOR;
-    const maxCount = 125*MAX_SCALE_FACTOR;
+    const baselineCount = 130*MAX_SCALE_FACTOR;
+    const maxCount = 160*MAX_SCALE_FACTOR;
     let numOfBalls = 0;
+
+    const someMagicFactor = 1/20;
 
     bodies.forEach((n, i) => {
         numOfBalls++;
-        const { render: { visible }, circleRadius, position: { x, y }, genome: { ballRadius, growthRate } = {}, label } = n;
+        const { render: { visible }, label } = n;
         if(!visible) return;
         if (label === 'ball') {
+            const { circleRadius, position: { x, y }, genome: { splitRate, percentageToUseForPregnancy, maxBallRadius, minBallRadiusGrowth, maxBallRadiusGrowth } } = n;
             if (y > plinkoHeight * 1.3) {
                 killBall({ ball: n, beforeKillBall });
                 numOfBalls--;
-            } else if (numOfBalls < maxCount && n.speed < 7 && n.data.energy > areaGivenRadius(circleRadius) && random() < 0.05) {
-                const newBall = spawnBall(n, { xOveride: x, yOveride: y });
-                numOfBalls++;
-                n.data.energy -= areaGivenRadius(circleRadius);
-                World.add(engine.world, Constraint.create({
-                    bodyA: n, bodyB: newBall,
-                    stiffness: 0.15,
-                    length: circleRadius + 2,
-                    damping: 0.75
-                }));
-            } else if (random() < 0.0005) {
+            } else if (numOfBallsLastCycle < maxCount && n.speed < 7 && random() < someMagicFactor && random() < splitRate) {
+                const energyAvailable = n.data.energy * percentageToUseForPregnancy;
+                const newBallRadius = bounds(MINIMUM_BALL_RADIUS, maxBallRadius)(
+                    circleRadius + valueBetween(minBallRadiusGrowth, maxBallRadiusGrowth, random)
+                );
+                const energyRequired = areaGivenRadius(newBallRadius);
+                if (energyAvailable > energyRequired) {
+                    const newBall = spawnBall(n, { xOveride: x, yOveride: y, paidInSize: newBallRadius });
+                    numOfBalls++;
+                    n.data.changeEnergy(-1 * energyAvailable);
+                    if (n.data.energy < 0) {
+                        killBall({ ball: n, beforeKillBall });
+                        numOfBalls--;
+                    } else {
+                        World.add(engine.world, Constraint.create({
+                            bodyA: n, bodyB: newBall,
+                            stiffness: 0.15,
+                            length: circleRadius + 2,
+                            damping: 0.75
+                        }));
+                    }
+                }
+            } else if (random() < (someMagicFactor/100)) {
                 killBall({ ball: n, beforeKillBall });
                 numOfBalls--;
             }
@@ -70,7 +84,7 @@ const stepLogic = ({ beforeKillBall, afterCycle, drawBall, drawCorpse, drawPeg, 
 
     let ballsNeeded = Math.max(baselineCount - numOfBalls, 0);
     for (; ballsNeeded > 0; ballsNeeded--) {
-        if (random() < 0.005*0.7) {
+        if (random() < (someMagicFactor*0.07)) {
             spawnBall();
             numOfBalls++;
         }
@@ -92,15 +106,23 @@ const setup = ({ sessionId, beforeKillBall } = {}) => {
             const { label: aLabel } = bodyA;
             const { label: bLabel } = bodyB;
             if (aLabel === 'ball' && bLabel === 'ball') {
-                const { circleRadius: aRadius, speed: aSpeed, data: { group: aGroup, energy: aEnergy } } = bodyA;
-                const { circleRadius: bRadius, speed: bSpeed, data: { group: bGroup, energy: bEnergy } } = bodyB;
-                if (aGroup !== bGroup) {
-                    if (aRadius > bRadius) {
+                const { circleRadius: aRadius, speed: aSpeed, genome: { ancestry: aAncestry, carnivorismRate: aCarnivorismRate, cannibalismRate: aCannibalismRate }, data: { energy: aEnergy } } = bodyA;
+                const { circleRadius: bRadius, speed: bSpeed, genome: { ancestry: bAncestry, carnivorismRate: bCarnivorismRate, cannibalismRate: bCannibalismRate }, data: { energy: bEnergy } } = bodyB;
+                if (aAncestry !== bAncestry) {
+                    if (aRadius >= bRadius && random() < aCarnivorismRate) {
                         killBall({ ball: bodyB, beforeKillBall });
-                        bodyA.data.energy += bEnergy;
-                    } else {
+                        bodyA.data.changeEnergy(bEnergy);
+                    } else if (bRadius >= aRadius && random() < bCarnivorismRate) {
                         killBall({ ball: bodyA, beforeKillBall });
-                        bodyB.data.energy += aEnergy;
+                        bodyB.data.changeEnergy(aEnergy);
+                    }
+                } else {
+                    if (aRadius >= bRadius && random() < aCannibalismRate) {
+                        killBall({ ball: bodyB, beforeKillBall });
+                        bodyA.data.changeEnergy(bEnergy);
+                    } else if (bRadius >= aRadius && random() < bCannibalismRate) {
+                        killBall({ ball: bodyA, beforeKillBall });
+                        bodyB.data.changeEnergy(aEnergy);
                     }
                 }
             }
@@ -167,11 +189,10 @@ function killBall({ ball, beforeKillBall }) {
     removeBody(ball);
 }
 
-function spawnBall(parent = {}, { xOveride, yOveride } = {}) {
-    const { circleRadius: parentCircleRadius, data: { hue, group, brightness } = {} } = parent;
-    const newBallRadius = parentCircleRadius ? Math.max(parentCircleRadius + valueBetween(-6.5, 1.5, random), MINIMUM_BALL_RADIUS) : MINIMUM_BALL_RADIUS + (random()*60/MAX_SCALE_FACTOR);
-    const defaultedNewHue = hue ? (hue + 1.5) : (random() * 360);
-    const wrappedNewHue = (defaultedNewHue>360) ? defaultedNewHue - 360 : defaultedNewHue;
+function spawnBall(parent, { xOveride, yOveride, paidInSize } = {}) {
+    const genome = ( parent ? makeChildGenome(parent, random) : makeNewBeingGenome(random) );
+    const { ballRadius, hue, brightness } = genome;
+    const newBallRadius = paidInSize || ( MINIMUM_BALL_RADIUS + (random()*60/MAX_SCALE_FACTOR) );
     return addCircle({
         x: xOveride || (plinkoWidth * ( (3*random()) - 1 )),
         y: yOveride || -10,
@@ -179,12 +200,13 @@ function spawnBall(parent = {}, { xOveride, yOveride } = {}) {
         options: {
             label: 'ball',
             restitution: 0,
-            data: {
-                group: group || parseInt(random()*5000),
-                energy: areaGivenRadius(newBallRadius),
-                hue: wrappedNewHue,
-                brightness: ((brightness !== undefined) ? Math.max(brightness - 0.01, 0.25) : 0.75)
-            }
+            genome,
+            data: getNewBeingData({
+                parent,
+                now: getTime(),
+                beginTime,
+                initialEnergy: areaGivenRadius(newBallRadius)
+            }),
         }
     });
 }

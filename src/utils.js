@@ -23,6 +23,14 @@ export const uuid = ({ length, rng }) => {
     return theReturn.join('');
 };
 
+export const bounds = (min, max) => {
+    return number => Math.min(Math.max(number, min), max);
+}
+
+export const valueBetween = (min, max, random) => {
+    return ( min + (random() * (max - min)) );
+}
+
 export class ExtendableError extends Error {
     constructor(message) {
         super(message);

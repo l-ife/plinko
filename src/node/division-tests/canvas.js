@@ -26,6 +26,8 @@ const { path: mkvPath, justName } = getNextSafePath({
 
 const filesName = justName;
 
+let frameRequestCallback;
+
 const startWSServer = () => {
     let wss = new WebSocket.Server({ port });
     wss.on('error', (e) => {
@@ -109,12 +111,16 @@ const setupCanvasAndDrawHandlers = () => {
             ctx.fillStyle = `hsl(${hue||0},${hue?100:0}%,${hue?50:0}%)`;
             quad(ctx, xysArray);
             ctx.fill();
+        },
+        drawCorpse({ corpse }) {
+            const { debug, render: { fillStyle }, position: { x, y }, circleRadius } = corpse;
+            ctx.fillStyle = `hsl(0,100%,${((debug?0:230/255)*100)}%)`;
+            ellipse(ctx, x, y, circleRadius * 2);
         }
     };
 };
 
-let frameRequestCallback;
-let { longLivedCanvas, drawBall, drawWall, frameReset } = setupCanvasAndDrawHandlers();
+let { longLivedCanvas, drawBall, drawWall, drawCorpse, frameReset } = setupCanvasAndDrawHandlers();
 
 const stepLogicHandlersWithDrawingHandlers = Object.assign({}, stepLogicHandlers, {
     drawBall,

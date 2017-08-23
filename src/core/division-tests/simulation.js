@@ -41,11 +41,11 @@ const stepLogic = ({ beforeKillBall, afterCycle, drawBall, drawCorpse, drawPeg, 
     const someMagicFactor = 1/20;
 
     bodies.forEach((n, i) => {
-        numOfBalls++;
-        const { render: { visible }, label } = n;
+        const { position: { x, y }, render: { visible }, label } = n;
         if(!visible) return;
         if (label === 'ball') {
-            const { circleRadius, position: { x, y }, genome: { splitRate, percentageToUseForPregnancy, maxBallRadius, minBallRadiusGrowth, maxBallRadiusGrowth } } = n;
+            numOfBalls++;
+            const { circleRadius, genome: { splitRate, percentageToUseForPregnancy, maxBallRadius, minBallRadiusGrowth, maxBallRadiusGrowth } } = n;
             if (y > plinkoHeight * 1.3) {
                 killBall({ ball: n, beforeKillBall });
                 numOfBalls--;
@@ -59,25 +59,33 @@ const stepLogic = ({ beforeKillBall, afterCycle, drawBall, drawCorpse, drawPeg, 
                     const newBall = spawnBall(n, { xOveride: x, yOveride: y, paidInSize: newBallRadius });
                     numOfBalls++;
                     n.data.changeEnergy(-1 * energyAvailable);
-                    if (n.data.energy < 0) {
-                        killBall({ ball: n, beforeKillBall });
-                        numOfBalls--;
-                    } else {
-                        World.add(engine.world, Constraint.create({
-                            bodyA: n, bodyB: newBall,
-                            stiffness: 0.15,
-                            length: circleRadius + 2,
-                            damping: 0.75
-                        }));
-                    }
+                    const newConstraint = Constraint.create({
+                        bodyA: n, bodyB: newBall,
+                        stiffness: 0.15,
+                        length: circleRadius + 2,
+                        damping: 0.75
+                    });
+                    if (!n.constraints) n.constraints = [];
+                    n.constraints.push(newConstraint);
+                    if (!newBall.constraints) newBall.constraints = [];
+                    newBall.constraints.push(newConstraint);
+                    World.add(engine.world, newConstraint);
                 }
-            } else if (random() < (someMagicFactor/100)) {
-                killBall({ ball: n, beforeKillBall });
+                drawBall && drawBall({ ball: n });
+            } else if (random() < (someMagicFactor/1000)) {
+                killBall({ ball: n, beforeKillBall, becomeCorpse: true });
                 numOfBalls--;
+            } else {
+                drawBall && drawBall({ ball: n });
             }
-            drawBall && drawBall({ ball: n });
         } else if (label === 'wall') {
             drawWall && drawWall({ wall: n });
+        } else if (label === 'corpse') {
+            if (y > plinkoHeight * 1.3) {
+                removeBody(n);
+            } else {
+                drawCorpse && drawCorpse({ corpse: n });
+            }
         }
     });
 
@@ -90,6 +98,7 @@ const stepLogic = ({ beforeKillBall, afterCycle, drawBall, drawCorpse, drawPeg, 
     }
 
     numOfBallsLastCycle = numOfBalls;
+    console.log(numOfBallsLastCycle);
 
     afterCycle && afterCycle({ numOfBalls });
 }
@@ -124,6 +133,15 @@ const setup = ({ sessionId, beforeKillBall } = {}) => {
                         bodyB.data.changeEnergy(aEnergy);
                     }
                 }
+            } else if (
+                (aLabel === 'corpse' && bLabel === 'ball') ||
+                (bLabel === 'corpse' && aLabel === 'ball')
+            ) {
+                const [ theBall, theCorpse ] = (aLabel === 'ball') ? [ bodyA, bodyB ] : [ bodyB, bodyA ];
+                const { consumedArea, data: { energy: consumedEnergy } } = theCorpse;
+                const energyConsumed = consumedArea + consumedEnergy;
+                theBall.data.changeEnergy(energyConsumed);
+                removeBody(theCorpse);
             }
         })
     });
@@ -165,7 +183,16 @@ function addBody(body) {
     World.add(engine.world, body);
 }
 
+function removeBodyConstraints(body) {
+    if (body.constraints) {
+        body.constraints.forEach(constraint => {
+            if (constraint) World.remove(engine.world, constraint)
+        });
+    }
+}
+
 function removeBody(body) {
+    removeBodyConstraints(body);
     World.remove(engine.world, body);
 }
 
@@ -181,11 +208,25 @@ function addRectangle({ x = 0, y = 0, w = 10, h = 10, options = {} } = {}) {
     return body;
 }
 
-function killBall({ ball, beforeKillBall }) {
+function convertToCorpse(ball) {
+    const { data: { energy } } = ball;
+    // TODO: Write this for perfomrance
+    ball.label = 'corpse';
+    ball.restitution = 0.95;
+    ball.render.fillStyle = undefined;
+    ball.genome = undefined;
+    ball.data = { energy };
+}
+
+function killBall({ ball, beforeKillBall, becomeCorpse }) {
     if (beforeKillBall) {
         beforeKillBall && beforeKillBall(ball);
     }
-    removeBody(ball);
+    if (becomeCorpse) {
+        convertToCorpse(ball);
+    } else {
+        removeBody(ball);
+    }
 }
 
 function spawnBall(parent, { xOveride, yOveride, paidInSize } = {}) {

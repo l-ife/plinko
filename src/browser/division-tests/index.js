@@ -28,6 +28,11 @@ const stepLogicHandlers = {
             .reduce((acc, arr) => acc.concat(arr), []);
         fill(debug?150:0);
         quad(...xysArray);
+    },
+    drawCorpse({ corpse }) {
+        const { debug, render: { fillStyle }, position: { x, y }, circleRadius } = corpse;
+        fill(debug?0:230);
+        ellipse(x, y, circleRadius * 2);
     }
 };
 

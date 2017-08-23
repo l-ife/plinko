@@ -1,9 +1,9 @@
-const { watch, getBrowserDefaults } = require('./rollup.build');
+const { watch, getBrowserDefaults } = require('../../core/build');
 
 watch([
   getBrowserDefaults({
-    entry: 'src/browser/browser-plinko/index.js',
-    dest: 'lib/browser/browser-plinko.js',
+    entry: 'src/browser/plinko/index.js',
+    dest: 'lib/browser/plinko.js',
     moduleName: 'Plinko'
-  }, { livereloadWatchPath: 'src/browser/plinko', port: 35732 })
+  }, { livereloadWatchPaths: ['src/browser/plinko', 'src/core/plinko'], port: 35732 })
 ]);

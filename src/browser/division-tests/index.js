@@ -1,9 +1,9 @@
-import { uuid } from '../../utils';
-import { getUrlArguments } from '../browser-utils';
+import { uuid } from '../../core/utils';
+import { getUrlArguments } from '../../browser/utils';
 
-import { Bodies, Body, Engine, Events, World } from '../../matter-js-exports-shim';
+import { Bodies, Body, Engine, Events, World } from '../../core/utils/matter-js-exports-shim';
 
-import simulation from '../../division-tests/simulation';
+import simulation from '../../core/division-tests/simulation';
 const { setup, stepLogic, utils: { getTime }, consts: { plinkoWidth, plinkoHeight } } = simulation;
 
 let engine;

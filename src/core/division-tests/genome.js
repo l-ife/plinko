@@ -46,6 +46,28 @@ const genomeDefinition = {
             }
         }
     },
+    makeAnchorBabyChance: {
+        bounds: [0, 1],
+        mutates: {
+            magnitude: 0.1,
+            rate: {
+                bounds: [0, 1],
+                getNewBeingValue: () => 1,
+                mutates: { magnitude: 0.05, rate: 1 }
+            }
+        }
+    },
+    stickiness: {
+        bounds: [0, 1],
+        mutates: {
+            magnitude: 0.1,
+            rate: {
+                bounds: [0, 1],
+                getNewBeingValue: () => 1,
+                mutates: { magnitude: 0.05, rate: 1 }
+            }
+        }
+    },
     // maxConcurrentChildren: {
 
     // },

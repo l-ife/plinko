@@ -1,5 +1,7 @@
 ## [plinko](/html/plinko.html)
 
+## [divisions](/html/division-tests.html)
+
 ## [3D Scatterplot](/html/3d-scatterplot.html)
 
 ## [2D Scatterplot](/html/2d-scatterplot.html)

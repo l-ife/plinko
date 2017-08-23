@@ -214,40 +214,39 @@ const setup = ({ sessionId, beforeKillBall } = {}) => {
                     const deathType = TYPES_OF_BIRTH_AND_DEATH.DEATH[areSameSpecies ? 'EATEN_BY_OWN_SPECIES' : 'EATEN_BY_OTHER_SPECIES'];
                     const checkFunction = areSameSpecies ? cannibalismCheck : carnivorismCheck;
                     const { aWantsToEat, bWantsToEat } = checkFunction(random, { bodyA, bodyB });
-                    const aEats = (
-                        (aWantsToEat && bWantsToEat && (random() < 0.5)) ||
-                        (aWantsToEat && !bWantsToEat)
-                    );
-                    const [ eater, eaten ] = aEats ? [ bodyA, bodyB ] : [ bodyB, bodyA ];
-                    const { genome: { maxEnergyToDonateToMidstreamChild }, data: { energy } } = eater;
-                    const { circleRadius: consumedRadius, data: { energy: consumedEnergy } } = eaten;
-                    killBall({ ball: eaten, beforeKillBall }, deathType);
-                    areSameSpecies ? eater.data.ownEaten++ : eater.data.othersEaten++;
-                    const energyConsumed = areaGivenRadius(consumedRadius) + consumedEnergy;
-                    eater.data.changeEnergy(energyConsumed);
-                    const { circleRadius, position: { x, y }, genome: { splitRate, becomePegRate, extraEnergyToPutIntoPeg } } = eater;
-                    if (energy > (PEG_EATER_MINIMUM_ENERGY + extraEnergyToPutIntoPeg) && y > 0.2 && random() < becomePegRate) {
-                        killBall(
-                            { ball: eater, beforeKillBall },
-                            TYPES_OF_BIRTH_AND_DEATH.DEATH.BECAME_PEG,
-                            { energyPutIntoPeg: PEG_EATER_MINIMUM_ENERGY + extraEnergyToPutIntoPeg }
+                    const someonesGonnaEat = aWantsToEat || bWantsToEat;
+                    if (someonesGonnaEat) {
+                        const bothWantToEat = aWantsToEat && bWantsToEat;
+                        const aEats = (
+                            (bothWantToEat && (random() < 0.5)) ||
+                            (aWantsToEat && !bWantsToEat)
                         );
-                    } else if (energy > MINIMUM_BALL_BIRTH_ENERGY && y > 0.2 && random() < splitRate) {
-                        const energyLeftOver = energy - MINIMUM_BALL_BIRTH_ENERGY;
-                        const energyToGive = Math.min(energyLeftOver, maxEnergyToDonateToMidstreamChild);
-                        eater.data.changeEnergy(-1 * ( MINIMUM_BALL_BIRTH_ENERGY + energyToGive ));
-                        const newBall = spawnBall(eater, TYPES_OF_BIRTH_AND_DEATH.BIRTH.SPLIT, { xOveride: x, yOveride: y - (circleRadius + MINIMUM_BALL_RADIUS), energyDonation: energyToGive });
-                        const constraint = Constraint.create({
-                            bodyA: eater,
-                            bodyB: newBall,
-                            // pointB: {
-                            //     x: 0,
-                            //     y: (-1 * (circleRadius + MINIMUM_BALL_RADIUS))
-                            // }
-                        });
-                        World.add(engine.world, constraint);
-                        // console.log('there was a split');
-                        eater.data.timesSplit++;
+                        const [ eater, eaten ] = aEats ? [ bodyA, bodyB ] : [ bodyB, bodyA ];
+                        const { genome: { maxEnergyToDonateToMidstreamChild }, data: { energy } } = eater;
+                        const { area: consumedArea, data: { energy: consumedEnergy } } = eaten;
+                        killBall({ ball: eaten, beforeKillBall });
+                        areSameSpecies ? eater.data.ownEaten++ : eater.data.othersEaten++;
+                        eater.data.changeEnergy(consumedArea + consumedEnergy);
+
+                        const { circleRadius, position: { x, y }, genome: { splitRate, becomePegRate, extraEnergyToPutIntoPeg } } = eater;
+                        if (energy > (PEG_EATER_MINIMUM_ENERGY + extraEnergyToPutIntoPeg) && y > 0.2 && random() < becomePegRate) {
+                            killBall(
+                                { ball: eater, beforeKillBall },
+                                TYPES_OF_BIRTH_AND_DEATH.DEATH.BECAME_PEG,
+                                { energyPutIntoPeg: PEG_EATER_MINIMUM_ENERGY + extraEnergyToPutIntoPeg }
+                            );
+                        } else if (energy > MINIMUM_BALL_BIRTH_ENERGY && y > 0.2 && random() < splitRate) {
+                            const energyLeftOver = energy - MINIMUM_BALL_BIRTH_ENERGY;
+                            const energyToGive = Math.min(energyLeftOver, maxEnergyToDonateToMidstreamChild);
+                            eater.data.changeEnergy(-1 * ( MINIMUM_BALL_BIRTH_ENERGY + energyToGive ));
+                            const newBall = spawnBall(eater, TYPES_OF_BIRTH_AND_DEATH.BIRTH.SPLIT, { xOveride: x, yOveride: y - (circleRadius + MINIMUM_BALL_RADIUS), energyDonation: energyToGive });
+                            const constraint = Constraint.create({
+                                bodyA: eater,
+                                bodyB: newBall
+                            });
+                            World.add(engine.world, constraint);
+                            eater.data.timesSplit++;
+                        }
                     }
                 }
             } else if (

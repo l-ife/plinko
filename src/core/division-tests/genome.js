@@ -110,6 +110,19 @@ const genomeDefinition = {
             }
         }
     },
+    whenNotConsideredMySpecies: {
+        type: GENETYPES.FLOAT,
+        bounds: [0, 100000],
+        getNewBeingValue: () => 55/HUE_STEP,
+        mutates: {
+            magnitude: 55/2,
+            rate: {
+                bounds: [0, 1],
+                getNewBeingValue: () => 1,
+                mutates: { magnitude: 0.05, rate: 1 }
+            }
+        }
+    },
     splitRate: {
         type: GENETYPES.FLOAT,
         bounds: [0, 1],

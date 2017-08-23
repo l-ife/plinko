@@ -7,7 +7,8 @@ import { uuid, valueBetween, bounds, ExtendableError } from '../../core/utils';
 
 export const GENETYPES = {
     FLOAT: 0,
-    RANKED_SET: 1
+    INT: 1,
+    RANKED_SET: 2
 }
 
 function mutate({ parentValue, _boundsFn, mutates: { magnitude }, rate }, random) {

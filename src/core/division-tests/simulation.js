@@ -128,6 +128,51 @@ const stepLogic = ({ beforeKillBall, afterCycle, drawBall, drawCorpse, drawPeg, 
     afterCycle && afterCycle({ numOfBalls });
 }
 
+const areSameSpeciesCheck = ({ bodyA, bodyB }) => {
+    const { genome: { ancestry: aAncestry } } = bodyA;
+    const { genome: { ancestry: bAncestry } } = bodyB;
+    return ( aAncestry === bAncestry );
+};
+
+const getMurderAbility = (random, { eater, attacked }) => {
+    return eater.circleRadius >= attacked.circleRadius;
+};
+
+const cannibalismCheck = (random, { bodyA, bodyB }) => {
+    const {
+        genome: {
+            generation: aGeneration,
+            whenNotConsideredMySpecies: aWhenNotConsideredMySpecies
+        }
+    } = bodyA;
+    const {
+        genome: {
+            generation: bGeneration,
+            whenNotConsideredMySpecies: bWhenNotConsideredMySpecies
+        }
+    } = bodyB;
+    const generationGap = Math.abs(aGeneration - bGeneration);
+    return {
+        aWantsToEat: (
+            (generationGap > aWhenNotConsideredMySpecies) &&
+            (random() < bodyA.genome.cannibalismRate) &&
+            getMurderAbility(random, { eater: bodyA, attacked: bodyB })
+        ),
+        bWantsToEat: (
+            (generationGap > bWhenNotConsideredMySpecies) &&
+            (random() < bodyB.genome.cannibalismRate) &&
+            getMurderAbility(random, { eater: bodyB, attacked: bodyA })
+        )
+    };
+};
+
+const carnivorismCheck = (random, { bodyA, bodyB }) => {
+    return {
+        aWantsToEat: (random() < bodyA.genome.carnivorismRate) && getMurderAbility(random, { eater: bodyA, attacked: bodyB }),
+        bWantsToEat: (random() < bodyB.genome.carnivorismRate) && getMurderAbility(random, { eater: bodyB, attacked: bodyA })
+    };
+};
+
 const setup = ({ sessionId, beforeKillBall } = {}) => {
     random = new Alea(sessionId);
     engine = Engine.create();
@@ -139,50 +184,25 @@ const setup = ({ sessionId, beforeKillBall } = {}) => {
             const { label: aLabel } = bodyA;
             const { label: bLabel } = bodyB;
             if (aLabel === 'ball' && bLabel === 'ball') {
-                const {
-                    circleRadius: aRadius,
-                    speed: aSpeed,
-                    genome: {
-                        ancestry: aAncestry,
-                        generation: aGeneration,
-                        carnivorismRate: aCarnivorismRate,
-                        cannibalismRate: aCannibalismRate,
-                        stickiness: aStickiness
-                    },
-                    data: { energy: aEnergy }
-                } = bodyA;
-                const {
-                    circleRadius: bRadius,
-                    speed: bSpeed,
-                    genome: {
-                        ancestry: bAncestry,
-                        generation: bGeneration,
-                        carnivorismRate: bCarnivorismRate,
-                        cannibalismRate: bCannibalismRate,
-                        stickiness: bStickiness
-                    },
-                    data: { energy: bEnergy }
-                } = bodyB;
-                if (aAncestry !== bAncestry || (Math.abs(aGeneration - bGeneration) > (55/HUE_STEP)) ) {
-                    if (aRadius >= bRadius && random() < aCarnivorismRate) {
-                        killBall({ ball: bodyB, beforeKillBall });
-                        const { area: consumedArea, data: { energy: consumedEnergy } } = bodyB;
-                        bodyA.data.changeEnergy(consumedArea + consumedEnergy);
-                    } else if (bRadius >= aRadius && random() < bCarnivorismRate) {
-                        killBall({ ball: bodyA, beforeKillBall });
-                        const { area: consumedArea, data: { energy: consumedEnergy } } = bodyA;
-                        bodyB.data.changeEnergy(consumedArea + consumedEnergy);
-                    }
+                const areSameSpecies = areSameSpeciesCheck({ bodyA, bodyB });
+                const checkFunction = areSameSpecies ? cannibalismCheck : carnivorismCheck;
+                const { aWantsToEat, bWantsToEat } = checkFunction(random, { bodyA, bodyB });
+                const someonesGonnaEat = aWantsToEat || bWantsToEat;
+                if (someonesGonnaEat) {
+                    const bothWantToEat = aWantsToEat && bWantsToEat;
+                    const aEats = (
+                        (bothWantToEat && (random() < 0.5)) ||
+                        (aWantsToEat && !bWantsToEat)
+                    );
+                    const [ eater, eaten ] = aEats ? [ bodyA, bodyB ] : [ bodyB, bodyA ];
+                    const { area: consumedArea, data: { energy: consumedEnergy } } = eaten;
+                    killBall({ ball: eaten, beforeKillBall });
+                    areSameSpecies ? eater.data.ownEaten++ : eater.data.othersEaten++;
+                    eater.data.changeEnergy(consumedArea + consumedEnergy);
                 } else {
-                    if (aRadius >= bRadius && random() < aCannibalismRate) {
-                        killBall({ ball: bodyB, beforeKillBall });
-                        const { area: consumedArea, data: { energy: consumedEnergy } } = bodyB;
-                        bodyA.data.changeEnergy(consumedArea + consumedEnergy);
-                    } else if (bRadius >= aRadius && random() < bCannibalismRate) {
-                        killBall({ ball: bodyA, beforeKillBall });
-                        const { area: consumedArea, data: { energy: consumedEnergy } } = bodyA;
-                        bodyB.data.changeEnergy(consumedArea + consumedEnergy);
-                    } else if (random() < aStickiness || random() < bStickiness) {
+                    const { genome: { stickiness: aStickiness } } = bodyA;
+                    const { genome: { stickiness: bStickiness } } = bodyB;
+                    if (random() < aStickiness || random() < bStickiness) {
                         stickTogether(bodyA, bodyB);
                     }
                 }

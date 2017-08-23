@@ -17,7 +17,19 @@ console.log(sessionId);
 const stepLogicHandlers = {
     beforeKillBall(ball) {},
     drawBall({ ball }) {
-        const { debug, render: { fillStyle }, position: { x, y }, circleRadius, genome: { hue, brightness } } = ball;
+        const {
+            render: { fillStyle },
+            position: { x, y },
+            circleRadius,
+            genome: { hue, brightness },
+            anchorConstraints = [],
+            debug
+        } = ball;
+        anchorConstraints.forEach(anchorConstraint => {
+            const { pointA: { x: pAx, y: pAy }, pointB: { x: pBx, y: pBy } } = anchorConstraint;
+            fill([ hue, 255, brightness*255 ]);
+            ellipse(pAx, pAy, 10);
+        });
         fill([ hue, 255, brightness*255 ]);
         ellipse(x, y, circleRadius * 2);
     },

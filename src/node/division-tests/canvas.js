@@ -99,8 +99,22 @@ const setupCanvasAndDrawHandlers = () => {
             background(ctx);
         },
         drawBall({ ball }) {
-            const { debug, render: { fillStyle }, position: { x, y }, circleRadius, genome: { hue, brightness } } = ball;
-            ctx.fillStyle = `hsl(${hue},100%,${(brightness*100)}%)`;
+            const {
+                render: { fillStyle },
+                position: { x, y },
+                circleRadius,
+                genome: { hue, brightness },
+                anchorConstraints = [],
+                debug
+            } = ball;
+            anchorConstraints.forEach(anchorConstraint => {
+                const { pointA: { x: pAx, y: pAy }, pointB: { x: pBx, y: pBy } } = anchorConstraint;
+                ctx.fillStyle = `hsl(${hue}, 100%, ${brightness*100}%)`;
+                ellipse(ctx, margins.x+pAx, margins.top+pAy, 10);
+                ctx.fill();
+            });
+
+            ctx.fillStyle = `hsl(${hue}, 100%, ${(brightness*100)}%)`;
             ellipse(ctx, margins.x+x, margins.top+y, circleRadius * 2);
             ctx.fill();
         },

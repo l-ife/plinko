@@ -22,7 +22,7 @@ const MINIMUM_BALL_RADIUS = 5;
 
 import { Bodies, Body, Composite, Constraint, Engine, Events, World } from '../../core/utils/matter-js-exports-shim';
 
-import { makeNewBeingGenome, makeChildGenome } from '../../core/division-tests/genome';
+import { makeNewBeingGenome, makeChildGenome, HUE_STEP } from '../../core/division-tests/genome';
 import { getNewBeingData } from '../../core/division-tests/data';
 
 let random;
@@ -58,8 +58,12 @@ const stepLogic = ({ beforeKillBall, afterCycle, drawBall, drawCorpse, drawPeg, 
                     minBallRadiusGrowth,
                     maxBallRadiusGrowth
                 },
-                data: { energy }
+                data: { birthdate }
             } = n;
+            if (now - birthdate > 32000 && random() < 40/maxCount) {
+                n.data.changeEnergy(-1 * 100);
+            }
+            const { data: { energy } } = n;
             const isOutsideBounds = (
                 y > plinkoHeight * 1.3 ||
                 y < (Y_START * 4) ||
@@ -68,6 +72,9 @@ const stepLogic = ({ beforeKillBall, afterCycle, drawBall, drawCorpse, drawPeg, 
             );
             if (isOutsideBounds) {
                 killBall({ ball: n, beforeKillBall });
+                numOfBalls--;
+            } else if (energy < 0) {
+                killBall({ ball: n, beforeKillBall, becomeCorpse: true });
                 numOfBalls--;
             } else if (random() < (someMagicFactor/10000)) {
                 killBall({ ball: n, beforeKillBall, becomeCorpse: true });
@@ -79,7 +86,7 @@ const stepLogic = ({ beforeKillBall, afterCycle, drawBall, drawCorpse, drawPeg, 
                 );
                 const ANCHORBABYCOST = 10000;
                 const isAnchorBaby = (random() < makeAnchorBabyChance);
-                const energyRequired = areaGivenRadius(newBallRadius) + isAnchorBaby?ANCHORBABYCOST:0;
+                const energyRequired = areaGivenRadius(newBallRadius) + (isAnchorBaby?ANCHORBABYCOST:0);
                 if (energyAvailable > energyRequired) {
                     const newBall = spawnBall(n, { xOveride: x, yOveride: y, paidInSize: newBallRadius, isAnchorBaby });
                     numOfBalls++;
@@ -92,12 +99,15 @@ const stepLogic = ({ beforeKillBall, afterCycle, drawBall, drawCorpse, drawPeg, 
         } else if (label === 'wall') {
             drawWall && drawWall({ wall: n });
         } else if (label === 'corpse') {
+            const { data: { becameACorpse } } = n;
             if (
                 y > plinkoHeight * 1.3 ||
                 y < (Y_START * 4) ||
                 x < (-1 * X_MARGINS * 1.5) ||
                 x > (plinkoWidth + (X_MARGINS * 1.5))
             ) {
+                removeBody(n);
+            } else if (now - becameACorpse > 128000) {
                 removeBody(n);
             } else {
                 drawCorpse && drawCorpse({ corpse: n });
@@ -134,6 +144,7 @@ const setup = ({ sessionId, beforeKillBall } = {}) => {
                     speed: aSpeed,
                     genome: {
                         ancestry: aAncestry,
+                        generation: aGeneration,
                         carnivorismRate: aCarnivorismRate,
                         cannibalismRate: aCannibalismRate,
                         stickiness: aStickiness
@@ -145,27 +156,32 @@ const setup = ({ sessionId, beforeKillBall } = {}) => {
                     speed: bSpeed,
                     genome: {
                         ancestry: bAncestry,
+                        generation: bGeneration,
                         carnivorismRate: bCarnivorismRate,
                         cannibalismRate: bCannibalismRate,
                         stickiness: bStickiness
                     },
                     data: { energy: bEnergy }
                 } = bodyB;
-                if (aAncestry !== bAncestry) {
+                if (aAncestry !== bAncestry || (Math.abs(aGeneration - bGeneration) > (55/HUE_STEP)) ) {
                     if (aRadius >= bRadius && random() < aCarnivorismRate) {
                         killBall({ ball: bodyB, beforeKillBall });
-                        bodyA.data.changeEnergy(bEnergy);
+                        const { area: consumedArea, data: { energy: consumedEnergy } } = bodyB;
+                        bodyA.data.changeEnergy(consumedArea + consumedEnergy);
                     } else if (bRadius >= aRadius && random() < bCarnivorismRate) {
                         killBall({ ball: bodyA, beforeKillBall });
-                        bodyB.data.changeEnergy(aEnergy);
+                        const { area: consumedArea, data: { energy: consumedEnergy } } = bodyA;
+                        bodyB.data.changeEnergy(consumedArea + consumedEnergy);
                     }
                 } else {
                     if (aRadius >= bRadius && random() < aCannibalismRate) {
                         killBall({ ball: bodyB, beforeKillBall });
-                        bodyA.data.changeEnergy(bEnergy);
+                        const { area: consumedArea, data: { energy: consumedEnergy } } = bodyB;
+                        bodyA.data.changeEnergy(consumedArea + consumedEnergy);
                     } else if (bRadius >= aRadius && random() < bCannibalismRate) {
                         killBall({ ball: bodyA, beforeKillBall });
-                        bodyB.data.changeEnergy(aEnergy);
+                        const { area: consumedArea, data: { energy: consumedEnergy } } = bodyA;
+                        bodyB.data.changeEnergy(consumedArea + consumedEnergy);
                     } else if (random() < aStickiness || random() < bStickiness) {
                         stickTogether(bodyA, bodyB);
                     }
@@ -175,9 +191,8 @@ const setup = ({ sessionId, beforeKillBall } = {}) => {
                 (bLabel === 'corpse' && aLabel === 'ball')
             ) {
                 const [ theBall, theCorpse ] = (aLabel === 'ball') ? [ bodyA, bodyB ] : [ bodyB, bodyA ];
-                const { consumedArea, data: { energy: consumedEnergy } } = theCorpse;
-                const energyConsumed = consumedArea + consumedEnergy;
-                theBall.data.changeEnergy(energyConsumed);
+                const { area: consumedArea, data: { energy: consumedEnergy } } = theCorpse;
+                theBall.data.changeEnergy(consumedArea + consumedEnergy);
                 removeBody(theCorpse);
             }
         })
@@ -226,6 +241,11 @@ function removeBodyConstraints(body) {
             if (constraint) World.remove(engine.world, constraint);
         });
     }
+    if (body.anchorConstraints) {
+        body.anchorConstraints.forEach(constraint => {
+            if (constraint) World.remove(engine.world, constraint);
+        });
+    }
 }
 
 function removeBody(body) {
@@ -253,7 +273,7 @@ function stickToWorld(ball) {
          pointA: { x, y },
          stiffness: 0.5
     });
-    ball.constraints.push(anchor);
+    ball.anchorConstraints.push(anchor);
     World.add(engine.world, anchor);
 }
 
@@ -276,7 +296,7 @@ function convertToCorpse(ball) {
     ball.restitution = 0.95;
     ball.render.fillStyle = undefined;
     ball.genome = undefined;
-    ball.data = { energy };
+    ball.data = { energy, becameACorpse: getTime() };
 }
 
 function killBall({ ball, beforeKillBall, becomeCorpse }) {
@@ -303,11 +323,12 @@ function spawnBall(parent, { xOveride, yOveride, paidInSize, isAnchorBaby } = {}
             restitution: 0,
             genome,
             constraints: [],
+            anchorConstraints: [],
             data: getNewBeingData({
                 parent,
                 now: getTime(),
                 beginTime,
-                initialEnergy: areaGivenRadius(newBallRadius)
+                initialEnergy: 0
             }),
         }
     });

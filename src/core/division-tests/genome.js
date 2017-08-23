@@ -9,6 +9,8 @@ import { Genome, GENETYPES } from '../../core/utils/genome';
 const MAX_SCALE_FACTOR = 3;
 const MINIMUM_BALL_RADIUS = 5;
 
+export const HUE_STEP = 1.5;
+
 const genomeDefinition = {
     maxBallRadius: {
         type: GENETYPES.FLOAT,
@@ -135,7 +137,7 @@ const genomeDefinition = {
     hue: {
         type: GENETYPES.FLOAT,
         getChildValue: ({ parentVal }) => {
-            const defaultedNewHue = parentVal + 1.5;
+            const defaultedNewHue = parentVal + HUE_STEP;
             return (defaultedNewHue > 360) ?
                 defaultedNewHue - 360 : defaultedNewHue;
         },
@@ -143,7 +145,7 @@ const genomeDefinition = {
     },
     brightness: {
         type: GENETYPES.FLOAT,
-        getChildValue: ({ parentVal }) => Math.max(parentVal - 0.01, 0.25),
+        getChildValue: ({ parentVal }) => Math.max(parentVal - (0.01/2), 0.25),
         getNewBeingValue: () => 0.75,
     },
     generation: {
@@ -151,7 +153,7 @@ const genomeDefinition = {
         getChildValue: ({ parentVal }) => parentVal + 1
     },
     ancestry: {
-        getNewBeingValue: ({ random }) => uuid({ length: 4, rng: random }),
+        getNewBeingValue: ({ random }) => uuid({ length: 4, rng: random })
     },
 };
 

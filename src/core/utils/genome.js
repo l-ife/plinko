@@ -91,7 +91,12 @@ function _makeChildGenome({ genome: pGenome }, dynamicGenomeDefinition, random) 
                 cGenome.mutationRates[key] = mutationRateDefinitionOrStaticRate;
             }
         } else if (geneDefintion.getChildValue) {
-            cGenome[key] = geneDefintion.getChildValue({ parentVal: pValue, random });
+            cGenome[key] = geneDefintion.getChildValue({
+                parentVal: pValue,
+                childGenomeSoFar: cGenome,
+                parentGenome: pGenome,
+                random
+            });
         } else {
             cGenome[key] = pValue;
         }

@@ -1,4 +1,4 @@
-const { watch, getBrowserDefaults, getNodeDefaults } = require('../core/build');
+const { watch, getBrowserDefaults, getNodeDefaults } = require('../../core/build');
 
 const livereload = require('rollup-plugin-livereload');
 const livereloadServer = livereload({

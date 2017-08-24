@@ -110,12 +110,11 @@ const genomeDefinition = {
             }
         }
     },
-    whenNotConsideredMySpecies: {
-        type: GENETYPES.FLOAT,
-        bounds: [0, 100000],
-        getNewBeingValue: () => 55/HUE_STEP,
+    speciationRate: {
+        bounds: [0, 1],
+        getNewBeingValue: () => 0,
         mutates: {
-            magnitude: 55/2,
+            magnitude: 2/10000,
             rate: {
                 bounds: [0, 1],
                 getNewBeingValue: () => 1,
@@ -166,7 +165,10 @@ const genomeDefinition = {
         getChildValue: ({ parentVal }) => parentVal + 1
     },
     ancestry: {
-        getNewBeingValue: ({ random }) => uuid({ length: 4, rng: random })
+        getNewBeingValue: ({ random }) => uuid({ length: 4, rng: random }),
+        getChildValue: ({ random, parentVal, parentGenome: { speciationRate } }) =>
+            random() < speciationRate ?
+                uuid({ length: 4, rng: random }) : parentVal
     },
 };
 

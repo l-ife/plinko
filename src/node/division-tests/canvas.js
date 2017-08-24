@@ -108,7 +108,7 @@ const setupCanvasAndDrawHandlers = () => {
                 debug
             } = ball;
             anchorConstraints.forEach(anchorConstraint => {
-                const { pointA: { x: pAx, y: pAy }, pointB: { x: pBx, y: pBy } } = anchorConstraint;
+                const { pointA: { x: pAx, y: pAy } } = anchorConstraint;
                 ctx.fillStyle = `hsl(${hue}, 100%, ${brightness*100}%)`;
                 ellipse(ctx, margins.x+pAx, margins.top+pAy, 10);
                 ctx.fill();

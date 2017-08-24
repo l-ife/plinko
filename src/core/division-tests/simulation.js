@@ -139,27 +139,12 @@ const getMurderAbility = (random, { eater, attacked }) => {
 };
 
 const cannibalismCheck = (random, { bodyA, bodyB }) => {
-    const {
-        genome: {
-            generation: aGeneration,
-            whenNotConsideredMySpecies: aWhenNotConsideredMySpecies
-        }
-    } = bodyA;
-    const {
-        genome: {
-            generation: bGeneration,
-            whenNotConsideredMySpecies: bWhenNotConsideredMySpecies
-        }
-    } = bodyB;
-    const generationGap = Math.abs(aGeneration - bGeneration);
     return {
         aWantsToEat: (
-            (generationGap > aWhenNotConsideredMySpecies) &&
             (random() < bodyA.genome.cannibalismRate) &&
             getMurderAbility(random, { eater: bodyA, attacked: bodyB })
         ),
         bWantsToEat: (
-            (generationGap > bWhenNotConsideredMySpecies) &&
             (random() < bodyB.genome.cannibalismRate) &&
             getMurderAbility(random, { eater: bodyB, attacked: bodyA })
         )
@@ -260,11 +245,13 @@ function removeBodyConstraints(body) {
         body.constraints.forEach(constraint => {
             if (constraint) World.remove(engine.world, constraint);
         });
+        body.constraints = undefined;
     }
     if (body.anchorConstraints) {
         body.anchorConstraints.forEach(constraint => {
             if (constraint) World.remove(engine.world, constraint);
         });
+        body.anchorConstraints = undefined;
     }
 }
 
@@ -280,9 +267,11 @@ function stickTogether(ballA, ballB) {
         length: ballA.circleRadius + 2,
         damping: 0.75
     });
-    ballA.constraints.push(bond);
-    ballB.constraints.push(bond);
-    World.add(engine.world, bond);
+    if (ballA.constraints !== undefined && ballB.constraints !== undefined) {
+        ballA.constraints.push(bond);
+        ballB.constraints.push(bond);
+        World.add(engine.world, bond);
+    }
 }
 
 function stickToWorld(ball) {
@@ -293,8 +282,10 @@ function stickToWorld(ball) {
          pointA: { x, y },
          stiffness: 0.5
     });
-    ball.anchorConstraints.push(anchor);
-    World.add(engine.world, anchor);
+    if (ball.anchorConstraints !== undefined) {
+        ball.anchorConstraints.push(anchor);
+        World.add(engine.world, anchor);
+    }
 }
 
 function addCircle({ x = 0, y = 0, r = 10, options = {} } = {}) {

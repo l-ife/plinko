@@ -26,7 +26,7 @@ const stepLogicHandlers = {
             debug
         } = ball;
         anchorConstraints.forEach(anchorConstraint => {
-            const { pointA: { x: pAx, y: pAy }, pointB: { x: pBx, y: pBy } } = anchorConstraint;
+            const { pointA: { x: pAx, y: pAy } } = anchorConstraint;
             fill([ hue, 255, brightness*255 ]);
             ellipse(pAx, pAy, 10);
         });

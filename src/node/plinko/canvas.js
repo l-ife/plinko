@@ -18,15 +18,24 @@ const margins = {
 import { uuid } from '../../core/utils';
 import { getNextSafePath } from '../../node/utils';
 
-import {
-    theBookOfPlinkoersHeaders, ballToEntry
-} from '../../core/plinko/logging';
+import { getGenomeColumnHeaders, getGenomeColumns } from '../../core/plinko/genome';
+import { getDataColumnHeaders, getDataColumns, calculateDataFields } from '../../core/plinko/data';
 
+import { BookOfTheDead } from '../../core/utils/logging';
 import { setupCsvWriter } from '../../node/utils/logging';
 
 const [ node, file, seed, writeDirPath = './data' ] = process.argv;
 
 let port = 8080;
+
+const bookOfTheDead = BookOfTheDead({
+    getGenomeColumnHeaders,
+    getGenomeColumns,
+
+    getDataColumnHeaders,
+    getDataColumns,
+    calculateDataFields
+});
 
 let sessionId = seed || uuid({ length: 16 });
 
@@ -40,7 +49,7 @@ const filesName = justName;
 
 // console.log(`Writing to ${theBookFilePath}`);
 let { write: writeToTheBook } = setupCsvWriter(theBookFilePath);
-writeToTheBook(theBookOfPlinkoersHeaders);
+writeToTheBook(bookOfTheDead.theBookOfTheDeadHeaders);
 
 const startWSServer = () => {
     let wss = new WebSocket.Server({ port });
@@ -91,7 +100,7 @@ const background = (ctx, color) => {
 
 const beforeKillBall = (ball) => {
     const now = getTime(engine);
-    writeToTheBook(ballToEntry(ball, now, beginTime));
+    writeToTheBook(bookOfTheDead.ballToEntry(ball, now, beginTime));
 };
 
 let { engine, beginTime } = setup({ sessionId, beforeKillBall });

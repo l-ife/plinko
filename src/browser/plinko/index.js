@@ -1,12 +1,25 @@
 import { uuid } from '../../core/utils';
 import { getUrlArguments } from '../../browser/utils';
-import { BookOfPlinkoers } from '../../core/plinko/logging';
+
+import { getGenomeColumnHeaders, getGenomeColumns } from '../../core/plinko/genome';
+import { getDataColumnHeaders, getDataColumns, calculateDataFields } from '../../core/plinko/data';
+
+import { BookOfTheDead } from '../../core/utils/logging';
 import { saveToDisk, startPeriodicCsvBackup } from '../../browser/utils/logging';
 
 import { Bodies, Body, Engine, Events, World } from '../../core/utils/matter-js-exports-shim';
 
 import plinko from '../../core/plinko/simulation';
 const { setup, stepLogic, utils: { getTime, ballAgeSurvivalFactor, getAverageMinMax }, consts: { plinkoWidth, plinkoHeight, oldAge } } = plinko;
+
+const bookOfTheDead = BookOfTheDead({
+    getGenomeColumnHeaders,
+    getGenomeColumns,
+
+    getDataColumnHeaders,
+    getDataColumns,
+    calculateDataFields
+});
 
 let engine;
 let beginTime;
@@ -16,21 +29,25 @@ const { seed } = getUrlArguments();
 const sessionId = seed || uuid({ length: 16 });
 console.log(sessionId);
 
-let bookOfPlinkoers = BookOfPlinkoers();
-
 startPeriodicCsvBackup(`${sessionId}-BoP`,
-    () => bookOfPlinkoers.getTheBook(engine, getTime(engine), beginTime)
+    () => bookOfTheDead.getTheBook(
+        Composite.allBodies(engine.world).filter(body => body.genome !== undefined),
+        getTime(engine), beginTime
+    )
 );
 
 window.doASave = () => {
-    saveToDisk(bookOfPlinkoers.getTheBook(engine, getTime(engine), beginTime), { filename: `${sessionId}-BoP` });
+    saveToDisk(bookOfTheDead.getTheBook(
+        Composite.allBodies(engine.world).filter(body => body.genome !== undefined),
+        getTime(engine), beginTime), { filename: `${sessionId}-BoP` }
+    );
 };
 
 console.log('loaded');
 
 const stepLogicHandlers = {
     beforeKillBall(ball) {
-        bookOfPlinkoers.addDead(ball, getTime(engine), beginTime);
+        bookOfTheDead.addDead(ball, getTime(engine), beginTime);
     },
     drawBall({ ball }) {
         const { debug, render: { fillStyle }, position: { x, y }, circleRadius, data: { energy } } = ball;

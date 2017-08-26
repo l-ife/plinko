@@ -7,16 +7,25 @@ const Canvas = require('canvas');
 import { Bodies, Body, Composite, Engine, Events, World } from '../../core/utils/matter-js-exports-shim';
 
 import simulation from '../../core/division-tests/simulation';
-const { setup, stepLogic, utils: { getTime }, consts: { plinkoWidth, plinkoHeight } } = simulation;
+const { setup, stepLogic, utils: { getTime }, consts: { stageWidth, stageHeight } } = simulation;
 
 import { uuid } from '../../core/utils';
 import { getNextSafePath } from '../../node/utils';
 
-import {
-    theBookOfTheDeadHeaders, ballToEntry
-} from '../../core/division-tests/logging';
+import { getGenomeColumnHeaders, getGenomeColumns } from '../../core/division-tests/genome';
+import { getDataColumnHeaders, getDataColumns, calculateDataFields } from '../../core/division-tests/data';
 
+import { BookOfTheDead } from '../../core/utils/logging';
 import { setupCsvWriter } from '../../node/utils/logging';
+
+const bookOfTheDead = BookOfTheDead({
+    getGenomeColumnHeaders,
+    getGenomeColumns,
+
+    getDataColumnHeaders,
+    getDataColumns,
+    calculateDataFields
+});
 
 const [ node, file, seed, writeDirPath = './data' ] = process.argv;
 
@@ -35,7 +44,7 @@ const { path: theBookFilePath } = getNextSafePath({
 });
 
 let { write: writeToTheBook } = setupCsvWriter(theBookFilePath);
-writeToTheBook(theBookOfTheDeadHeaders);
+writeToTheBook(bookOfTheDead.theBookOfTheDeadHeaders);
 
 let frameRequestCallback;
 
@@ -89,14 +98,14 @@ const background = (ctx, color) => {
 };
 
 const margins = {
-    x: plinkoWidth*1.5,
+    x: stageWidth * 1.5,
     top: 200,
     bottom: 0
 };
 
 const beforeKillBall = (ball) => {
     const now = getTime(engine);
-    writeToTheBook(ballToEntry(ball, now, beginTime));
+    writeToTheBook(bookOfTheDead.ballToEntry(ball, now, beginTime));
 };
 
 let { engine, beginTime } = setup({ sessionId, beforeKillBall });
@@ -106,7 +115,7 @@ const stepLogicHandlers = {
 };
 
 const setupCanvasAndDrawHandlers = () => {
-    let longLivedCanvas = new Canvas(plinkoWidth + (2*margins.x), (margins.top + plinkoHeight + margins.bottom));
+    let longLivedCanvas = new Canvas(stageWidth + (2 * margins.x), (margins.top + stageHeight + margins.bottom));
     let ctx = longLivedCanvas.getContext('2d');
 
     return {

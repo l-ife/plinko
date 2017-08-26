@@ -5,20 +5,32 @@ import Alea from 'alea';
 
 const MAX_SCALE_FACTOR = 3;
 
-let plinkoWidth = 750;//*1.5;
-let plinkoHeight = 1800;
+let stageWidth = 750;//*1.5;
+let stageHeight = 1800;
 let countX = 20;//*1.5;
 let countY = 2;//24;
 let numOfPegs = 0;
 
+const X_MARGINS = stageWidth * 1.5;
 const Y_START = -10;
-const X_MARGINS = plinkoWidth*1.5;
+
+const outOfBoundsChecker = ({ left, right, top, bottom }) =>
+    ({ x, y }) => ( x < left || x > right || y < top || y > bottom );
+
+const outOfBounds = outOfBoundsChecker({
+    left: (-1 * X_MARGINS * 1.5),
+    right: (stageWidth + (X_MARGINS * 1.5)),
+    top: (Y_START * 4),
+    bottom: (stageHeight * 1.3)
+});
 
 const areaToRadiusPercentageIncrease = areaPercentageIncrease => 0.2 * Math.sqrt( (25 * areaPercentageIncrease) + 25) - 1;
 const areaGivenRadius = radius => Math.PI * Math.pow(radius, 2);
 const radiusGivenArea = area   => Math.sqrt(area) / Math.sqrt(Math.PI);
 
 const MINIMUM_BALL_RADIUS = 5;
+
+const ANCHORBABYCOST = 10000;
 
 import { Bodies, Body, Composite, Constraint, Engine, Events, World } from '../../core/utils/matter-js-exports-shim';
 
@@ -64,13 +76,7 @@ const stepLogic = ({ beforeKillBall, afterCycle, drawBall, drawCorpse, drawPeg, 
                 n.data.changeEnergy(-1 * 100);
             }
             const { data: { energy } } = n;
-            const isOutsideBounds = (
-                y > plinkoHeight * 1.3 ||
-                y < (Y_START * 4) ||
-                x < (-1 * X_MARGINS * 1.5) ||
-                x > (plinkoWidth + (X_MARGINS * 1.5))
-            );
-            if (isOutsideBounds) {
+            if (outOfBounds({ x, y })) {
                 killBall({ ball: n, beforeKillBall });
                 numOfBalls--;
             } else if (energy < 0) {
@@ -84,7 +90,6 @@ const stepLogic = ({ beforeKillBall, afterCycle, drawBall, drawCorpse, drawPeg, 
                 const newBallRadius = bounds(MINIMUM_BALL_RADIUS, maxBallRadius)(
                     circleRadius + valueBetween(ballRadiusGrowthExtentOne, ballRadiusGrowthExtentTwo, random)
                 );
-                const ANCHORBABYCOST = 10000;
                 const isAnchorBaby = (random() < makeAnchorBabyChance);
                 const energyRequired = areaGivenRadius(newBallRadius) + (isAnchorBaby?ANCHORBABYCOST:0);
                 if (energyAvailable > energyRequired) {
@@ -100,14 +105,7 @@ const stepLogic = ({ beforeKillBall, afterCycle, drawBall, drawCorpse, drawPeg, 
             drawWall && drawWall({ wall: n });
         } else if (label === 'corpse') {
             const { data: { becameACorpse } } = n;
-            if (
-                y > plinkoHeight * 1.3 ||
-                y < (Y_START * 4) ||
-                x < (-1 * X_MARGINS * 1.5) ||
-                x > (plinkoWidth + (X_MARGINS * 1.5))
-            ) {
-                removeBody(n);
-            } else if (now - becameACorpse > 128000) {
+            if ( outOfBounds({ x, y }) || ( (now - becameACorpse) > 128000 ) ) {
                 removeBody(n);
             } else {
                 drawCorpse && drawCorpse({ corpse: n });
@@ -215,13 +213,13 @@ const setup = ({ sessionId, beforeKillBall } = {}) => {
         })
     });
 
-    const boxWidth = plinkoWidth*3;
-    const boxBottom = plinkoHeight-450;
+    const boxWidth = stageWidth * 3;
+    const boxBottom = stageHeight - 450;
     const boxHeight = 500;
     const wallThickness = 75;
-    const centerX = (plinkoWidth/2);
-    const leftX = centerX-(boxWidth/2);
-    const rightX = centerX+(boxWidth/2);
+    const centerX = (stageWidth / 2);
+    const leftX = centerX - (boxWidth / 2);
+    const rightX = centerX + (boxWidth / 2);
     addRectangle({
         x: centerX, y: boxBottom, w: boxWidth, h: wallThickness,
         options: { isStatic: true, label: 'wall' }
@@ -338,7 +336,7 @@ function spawnBall(parent, { xOveride, yOveride, paidInSize, isAnchorBaby } = {}
     const { ballRadius, hue, brightness } = genome;
     const newBallRadius = paidInSize || ( MINIMUM_BALL_RADIUS + (random()*60/MAX_SCALE_FACTOR) );
     const newBall = addCircle({
-        x: xOveride || (plinkoWidth * ( (3*random()) - 1 )),
+        x: xOveride || (stageWidth * ( (3*random()) - 1 )),
         y: yOveride || Y_START,
         r: newBallRadius,
         options: {
@@ -366,8 +364,8 @@ export default {
         getTime
     },
     consts: {
-        plinkoWidth,
-        plinkoHeight,
+        stageWidth,
+        stageHeight,
         countX,
         countY
     }

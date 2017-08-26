@@ -4,7 +4,7 @@ import { getUrlArguments } from '../../browser/utils';
 import { Bodies, Body, Engine, Events, World } from '../../core/utils/matter-js-exports-shim';
 
 import simulation from '../../core/division-tests/simulation';
-const { setup, stepLogic, utils: { getTime }, consts: { plinkoWidth, plinkoHeight } } = simulation;
+const { setup, stepLogic, utils: { getTime }, consts: { stageWidth } } = simulation;
 
 let engine;
 let beginTime;
@@ -60,7 +60,7 @@ window.draw = () => {
     background(255);
     strokeWeight(0);
 
-    translate((width / 2) - (plinkoWidth / 2), 100);
+    translate((width / 2) - (stageWidth / 2), 100);
 
     stepLogic(stepLogicHandlers);
 };

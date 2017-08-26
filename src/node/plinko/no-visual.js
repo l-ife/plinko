@@ -8,11 +8,20 @@ const { setup, stepLogic, utils: { getTime } } = plinko;
 import { uuid } from '../../core/utils';
 import { getNextSafePath } from '../../node/utils';
 
-import {
-    theBookOfPlinkoersHeaders, ballToEntry
-} from '../../core/utils/logging';
+import { getGenomeColumnHeaders, getGenomeColumns } from '../../core/plinko/genome';
+import { getDataColumnHeaders, getDataColumns, calculateDataFields } from '../../core/plinko/data';
 
+import { BookOfTheDead } from '../../core/utils/logging';
 import { setupCsvWriter } from '../../node/utils/logging';
+
+const bookOfTheDead = BookOfTheDead({
+    getGenomeColumnHeaders,
+    getGenomeColumns,
+
+    getDataColumnHeaders,
+    getDataColumns,
+    calculateDataFields
+});
 
 const [ node, file, seed, writeDirPath = './data' ] = process.argv;
 
@@ -28,11 +37,11 @@ console.log(`Writing to ${theBookFilePath}`);
 
 let { write: writeToTheBook } = setupCsvWriter(theBookFilePath);
 
-writeToTheBook(theBookOfPlinkoersHeaders);
+writeToTheBook(bookOfTheDead.theBookOfPlinkoersHeaders);
 
 const beforeKillBall = (ball) => {
     const now = getTime(engine);
-    writeToTheBook(ballToEntry(ball, now, beginTime));
+    writeToTheBook(bookOfTheDead.ballToEntry(ball, now, beginTime));
 };
 
 let { engine, beginTime } = setup({ sessionId, beforeKillBall });

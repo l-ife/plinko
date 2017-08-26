@@ -20,7 +20,7 @@ import { getNextSafePath } from '../../node/utils';
 
 import {
     theBookOfPlinkoersHeaders, ballToEntry
-} from '../../core/utils/logging';
+} from '../../core/plinko/logging';
 
 import { setupCsvWriter } from '../../node/utils/logging';
 

@@ -55,8 +55,8 @@ const stepLogic = ({ beforeKillBall, afterCycle, drawBall, drawCorpse, drawPeg, 
                     percentageToUseForPregnancy,
                     makeAnchorBabyChance,
                     maxBallRadius,
-                    minBallRadiusGrowth,
-                    maxBallRadiusGrowth
+                    ballRadiusGrowthExtentOne,
+                    ballRadiusGrowthExtentTwo
                 },
                 data: { birthdate }
             } = n;
@@ -82,7 +82,7 @@ const stepLogic = ({ beforeKillBall, afterCycle, drawBall, drawCorpse, drawPeg, 
             } else if (numOfBallsLastCycle < maxCount && n.speed < 7 && random() < someMagicFactor && random() < splitRate) {
                 const energyAvailable = n.data.energy * percentageToUseForPregnancy;
                 const newBallRadius = bounds(MINIMUM_BALL_RADIUS, maxBallRadius)(
-                    circleRadius + valueBetween(minBallRadiusGrowth, maxBallRadiusGrowth, random)
+                    circleRadius + valueBetween(ballRadiusGrowthExtentOne, ballRadiusGrowthExtentTwo, random)
                 );
                 const ANCHORBABYCOST = 10000;
                 const isAnchorBaby = (random() < makeAnchorBabyChance);
@@ -185,10 +185,22 @@ const setup = ({ sessionId, beforeKillBall } = {}) => {
                     areSameSpecies ? eater.data.ownEaten++ : eater.data.othersEaten++;
                     eater.data.changeEnergy(consumedArea + consumedEnergy);
                 } else {
-                    const { genome: { stickiness: aStickiness } } = bodyA;
-                    const { genome: { stickiness: bStickiness } } = bodyB;
-                    if (random() < aStickiness || random() < bStickiness) {
-                        stickTogether(bodyA, bodyB);
+                    const { genome: {
+                        selfStickiness: aSelfStickiness,
+                        stickinessToOthers: aStickinessToOthers
+                    } } = bodyA;
+                    const { genome: {
+                        selfStickiness: bSelfStickiness,
+                        stickinessToOthers: bStickinessToOthers
+                    } } = bodyB;
+                    if (areSameSpecies) {
+                        if (random() < aSelfStickiness || random() < bSelfStickiness) {
+                            stickTogether(bodyA, bodyB);
+                        }
+                    } else {
+                        if (random() < aStickinessToOthers || random() < bStickinessToOthers) {
+                            stickTogether(bodyA, bodyB);
+                        }
                     }
                 }
             } else if (

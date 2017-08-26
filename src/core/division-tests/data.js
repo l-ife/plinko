@@ -26,9 +26,9 @@ const dataDefinitions = {
     ownEaten: {
         getInitialValue: () => 0,
     },
-    timesSplit: {
-        getInitialValue: () => 0
-    },
+    // timesSplit: {
+    //     getInitialValue: () => 0
+    // },
     // finalRadius: {
     //     getValueToLog: ({ circleRadius }) => circleRadius
     // },

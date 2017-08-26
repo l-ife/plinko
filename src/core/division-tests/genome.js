@@ -24,7 +24,7 @@ const genomeDefinition = {
             }
         }
     },
-    maxBallRadiusGrowth: {
+    ballRadiusGrowthExtentOne: {
         type: GENETYPES.FLOAT,
         bounds: [-1.5, 1.5],
         mutates: {
@@ -36,7 +36,7 @@ const genomeDefinition = {
             }
         }
     },
-    minBallRadiusGrowth: {
+    ballRadiusGrowthExtentTwo: {
         type: GENETYPES.FLOAT,
         bounds: [-6.5, 1],
         mutates: {
@@ -59,7 +59,18 @@ const genomeDefinition = {
             }
         }
     },
-    stickiness: {
+    stickinessToOthers: {
+        bounds: [0, 1],
+        mutates: {
+            magnitude: 0.1,
+            rate: {
+                bounds: [0, 1],
+                getNewBeingValue: () => 1,
+                mutates: { magnitude: 0.05, rate: 1 }
+            }
+        }
+    },
+    selfStickiness: {
         bounds: [0, 1],
         mutates: {
             magnitude: 0.1,
@@ -146,15 +157,6 @@ const genomeDefinition = {
             }
         }
     },
-    hue: {
-        type: GENETYPES.FLOAT,
-        getChildValue: ({ parentVal }) => {
-            const defaultedNewHue = parentVal + HUE_STEP;
-            return (defaultedNewHue > 360) ?
-                defaultedNewHue - 360 : defaultedNewHue;
-        },
-        getNewBeingValue: ({ random }) => random() * 360
-    },
     brightness: {
         type: GENETYPES.FLOAT,
         getChildValue: ({ parentVal }) => Math.max(parentVal - (0.01/2), 0.25),
@@ -169,6 +171,21 @@ const genomeDefinition = {
         getChildValue: ({ random, parentVal, parentGenome: { speciationRate } }) =>
             random() < speciationRate ?
                 uuid({ length: 4, rng: random }) : parentVal
+    },
+    hue: {
+        type: GENETYPES.FLOAT,
+        getChildValue: ({
+            parentVal,
+            parentGenome: { ancestry: pAncestry },
+            childGenomeSoFar: { ancestry: cAncestry }
+        }) => {
+            const speciationHappened = (pAncestry !== cAncestry);
+            const defaultedNewHue =
+                speciationHappened ? (parentVal + 180) : (parentVal + HUE_STEP);
+            return (defaultedNewHue > 360) ?
+                defaultedNewHue - 360 : defaultedNewHue;
+        },
+        getNewBeingValue: ({ random }) => random() * 360
     },
 };
 

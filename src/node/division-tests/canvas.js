@@ -10,23 +10,36 @@ import simulation from '../../core/division-tests/simulation';
 const { setup, stepLogic, utils: { getTime }, consts: { plinkoWidth, plinkoHeight } } = simulation;
 
 import { uuid } from '../../core/utils';
-import { getNextSafePath } from '../utils';
+import { getNextSafePath } from '../../node/utils';
+
+import {
+    theBookOfTheDeadHeaders, ballToEntry
+} from '../../core/division-tests/logging';
+
+import { setupCsvWriter } from '../../node/utils/logging';
 
 const [ node, file, seed, writeDirPath = './data' ] = process.argv;
 
-let port = 8080;
-
 let sessionId = seed || uuid({ length: 16 });
 
-const { path: mkvPath, justName } = getNextSafePath({
+const { path: mkvPath, justName: filesName } = getNextSafePath({
     dirPath: writeDirPath,
     fileName: sessionId,
     extension: 'mkv'
 });
 
-const filesName = justName;
+const { path: theBookFilePath } = getNextSafePath({
+    dirPath: writeDirPath,
+    fileName: sessionId,
+    extension: 'csv'
+});
+
+let { write: writeToTheBook } = setupCsvWriter(theBookFilePath);
+writeToTheBook(theBookOfTheDeadHeaders);
 
 let frameRequestCallback;
+
+let port = 8080;
 
 const startWSServer = () => {
     let wss = new WebSocket.Server({ port });
@@ -81,7 +94,10 @@ const margins = {
     bottom: 0
 };
 
-const beforeKillBall = (ball) => {};
+const beforeKillBall = (ball) => {
+    const now = getTime(engine);
+    writeToTheBook(ballToEntry(ball, now, beginTime));
+};
 
 let { engine, beginTime } = setup({ sessionId, beforeKillBall });
 

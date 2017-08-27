@@ -183,17 +183,45 @@ const setup = ({ sessionId, beforeKillBall } = {}) => {
                     areSameSpecies ? eater.data.ownEaten++ : eater.data.othersEaten++;
                     eater.data.changeEnergy(consumedArea + consumedEnergy);
                 } else {
-                    const { genome: {
-                        selfStickiness: aSelfStickiness,
-                        stickinessToOthers: aStickinessToOthers
-                    } } = bodyA;
-                    const { genome: {
-                        selfStickiness: bSelfStickiness,
-                        stickinessToOthers: bStickinessToOthers
-                    } } = bodyB;
+                    const {
+                        genome: {
+                            selfStickiness: aSelfStickiness,
+                            stickinessToOthers: aStickinessToOthers
+                        },
+                        data: { energy: aEnergy }
+                    } = bodyA;
+                    const {
+                        genome: {
+                            selfStickiness: bSelfStickiness,
+                            stickinessToOthers: bStickinessToOthers
+                        },
+                        data: { energy: bEnergy }
+                    } = bodyB;
                     if (areSameSpecies) {
                         if (random() < aSelfStickiness || random() < bSelfStickiness) {
                             stickTogether(bodyA, bodyB);
+                        }
+                        const [ ballWithMoreEnergy, ballWithLessEnergy ] =
+                            (aEnergy >= bEnergy) ? [bodyA, bodyB] : [bodyB, bodyA];
+                        const {
+                            genome: { energyToTransfer },
+                            data: { energy: moreEnergyAmount }
+                        } = ballWithMoreEnergy;
+                        const { data: { energy: lessEnergyAmount } } = ballWithLessEnergy;
+                        const positiveTransfer = (energyToTransfer > 0);
+                        if (positiveTransfer) {
+                            const transferAmount =
+                                (moreEnergyAmount > energyToTransfer) ?
+                                    energyToTransfer : moreEnergyAmount;
+                            ballWithLessEnergy.data.changeEnergy(transferAmount);
+                            ballWithMoreEnergy.data.changeEnergy(-1 * transferAmount);
+                        } else {
+                            const absoluteEnergyToTransfer = Math.abs(energyToTransfer);
+                            const transferAmount =
+                                (lessEnergyAmount > absoluteEnergyToTransfer) ?
+                                    absoluteEnergyToTransfer : lessEnergyAmount;
+                            ballWithLessEnergy.data.changeEnergy(-1 * transferAmount);
+                            ballWithMoreEnergy.data.changeEnergy(transferAmount);
                         }
                     } else {
                         if (random() < aStickinessToOthers || random() < bStickinessToOthers) {

@@ -13,9 +13,8 @@ export const GENETYPES = {
 
 function mutate({ parentValue, _boundsFn, mutates: { magnitude }, rate }, random) {
     const mutation = (
-        ((random()*magnitude * 2) - magnitude) * rate
+        ((random() * magnitude * 2) - magnitude) * rate
     );
-
     return _boundsFn(parentValue + mutation);
 }
 

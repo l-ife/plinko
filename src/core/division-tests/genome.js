@@ -81,6 +81,19 @@ const genomeDefinition = {
             }
         }
     },
+    energyToTransfer: {
+        type: GENETYPES.FLOAT,
+        bounds: [-1000, 10000],
+        getNewBeingValue: () => 0,
+        mutates: {
+            magnitude: 10,
+            rate: {
+                bounds: [0, 1],
+                getNewBeingValue: () => 1,
+                mutates: { magnitude: 0.05, rate: 1 }
+            }
+        }
+    },
     // maxConcurrentChildren: {
 
     // },

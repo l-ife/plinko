@@ -18,7 +18,7 @@ const dataDefinitions = {
         getInitialValue: () => 0,
     },
     energy: {
-        getInitialValue: ({ initialEnergy = 0 }) => initialEnergy,
+        getInitialValue: ({ initial: { energy = 0 } = {} }) => energy,
     },
     othersEaten: {
         getInitialValue: () => 0,

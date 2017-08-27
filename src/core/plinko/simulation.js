@@ -453,7 +453,7 @@ function spawnBall(parent, birthType, { xOveride, yOveride, energyDonation = 0 }
                 now: getTime(),
                 beginTime,
                 birthType,
-                initialEnergy: energy
+                initial: { energy }
             }),
         }
     });

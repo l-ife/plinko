@@ -349,7 +349,7 @@ function spawnBall(parent, { xOveride, yOveride, paidInSize, isAnchorBaby } = {}
                 parent,
                 now: getTime(),
                 beginTime,
-                initialEnergy: 0
+                initial: { energy: 0 }
             }),
         }
     });

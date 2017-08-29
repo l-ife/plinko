@@ -21,7 +21,8 @@ const getNodeDefaults = (baseOptions) => assign({}, defaults, {
     'lodash/mapValues',
     'lodash/assign',
     'lodash/get',
-    'lodash/map'
+    'lodash/map',
+    'lodash/reduce',
   ],
   globals: {
     'node_modules/matter-js/build/matter.js': 'Matter',
@@ -30,7 +31,8 @@ const getNodeDefaults = (baseOptions) => assign({}, defaults, {
     'lodash/mapValues': 'mapValues',
     'lodash/assign': 'assign',
     'lodash/get': 'get',
-    'lodash/map': 'map'
+    'lodash/map': 'map',
+    'lodash/reduce': 'reduce',
   },
   plugins: [
     commonjs({

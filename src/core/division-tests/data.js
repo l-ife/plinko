@@ -26,6 +26,9 @@ const dataDefinitions = {
     ownEaten: {
         getInitialValue: () => 0,
     },
+    wasAnchorBaby: {
+        getInitialValue: ({ initial: { wasAnchorBaby = 0 } }) => wasAnchorBaby
+    }
     // timesSplit: {
     //     getInitialValue: () => 0
     // },

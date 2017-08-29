@@ -81,12 +81,11 @@ const genomeDefinition = {
             }
         }
     },
-    energyToTransfer: {
+    energyDiffusionRate: {
         type: GENETYPES.FLOAT,
-        bounds: [-1000, 10000],
-        getNewBeingValue: () => 0,
+        bounds: [0, 1],
         mutates: {
-            magnitude: 10,
+            magnitude: 0.1,
             rate: {
                 bounds: [0, 1],
                 getNewBeingValue: () => 1,

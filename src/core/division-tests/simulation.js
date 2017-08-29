@@ -1,3 +1,5 @@
+import reduce from 'lodash/reduce';
+
 import { uuid } from '../../core/utils';
 import { valueBetween, bounds } from '../../core/utils';
 
@@ -68,9 +70,11 @@ const stepLogic = ({ beforeKillBall, afterCycle, drawBall, drawCorpse, drawPeg, 
                     makeAnchorBabyChance,
                     maxBallRadius,
                     ballRadiusGrowthExtentOne,
-                    ballRadiusGrowthExtentTwo
+                    ballRadiusGrowthExtentTwo,
+                    energyDiffusionRate
                 },
-                data: { birthdate }
+                data: { birthdate },
+                constraints
             } = n;
             if (now - birthdate > 32000 && random() < 40/maxCount) {
                 n.data.changeEnergy(-1 * 100);
@@ -85,20 +89,61 @@ const stepLogic = ({ beforeKillBall, afterCycle, drawBall, drawCorpse, drawPeg, 
             } else if (random() < (someMagicFactor/10000)) {
                 killBall({ ball: n, beforeKillBall, becomeCorpse: true });
                 numOfBalls--;
-            } else if (numOfBallsLastCycle < maxCount && n.speed < 7 && random() < someMagicFactor && random() < splitRate) {
-                const energyAvailable = n.data.energy * percentageToUseForPregnancy;
-                const newBallRadius = bounds(MINIMUM_BALL_RADIUS, maxBallRadius)(
-                    circleRadius + valueBetween(ballRadiusGrowthExtentOne, ballRadiusGrowthExtentTwo, random)
-                );
-                const isAnchorBaby = (random() < makeAnchorBabyChance);
-                const energyRequired = areaGivenRadius(newBallRadius) + (isAnchorBaby?ANCHORBABYCOST:0);
-                if (energyAvailable > energyRequired) {
-                    const newBall = spawnBall(n, { xOveride: x, yOveride: y, paidInSize: newBallRadius, isAnchorBaby });
-                    numOfBalls++;
-                    n.data.changeEnergy(-1 * energyRequired);
-                }
-                drawBall && drawBall({ ball: n });
             } else {
+                if (numOfBallsLastCycle < maxCount && n.speed < 7 && random() < someMagicFactor && random() < splitRate) {
+                    const energyAvailable = n.data.energy * percentageToUseForPregnancy;
+                    const newBallRadius = bounds(MINIMUM_BALL_RADIUS, maxBallRadius)(
+                        circleRadius + valueBetween(ballRadiusGrowthExtentOne, ballRadiusGrowthExtentTwo, random)
+                    );
+                    const isAnchorBaby = (random() < makeAnchorBabyChance);
+                    const energyRequired = areaGivenRadius(newBallRadius) + (isAnchorBaby?ANCHORBABYCOST:0);
+                    if (energyAvailable > energyRequired) {
+                        const newBall = spawnBall(n, { xOveride: x, yOveride: y, paidInSize: newBallRadius, isAnchorBaby });
+                        numOfBalls++;
+                        n.data.changeEnergy(-1 * energyRequired);
+                    }
+                }
+
+                if(constraints.length > 0) {
+                    const [
+                        lessThanNeighbors,
+                        lessThanNeighborsTotal,
+                        neighborsTotal
+                    ] = constraints.reduce(([lessThanNeighbors, lessThanNeighborsTotal, total], constraint) => {
+                        const neighbor = getOtherEndOfConstraint(constraint, n);
+                        const { data: { energy: neighborEnergy } } = neighbor;
+                        if (neighborEnergy > energy) {
+                            return [
+                                lessThanNeighbors,
+                                lessThanNeighborsTotal,
+                                total + neighborEnergy
+                            ];
+                        }
+                        return [
+                            lessThanNeighbors.concat([neighbor]),
+                            lessThanNeighborsTotal + neighborEnergy,
+                            total + neighborEnergy
+                        ];
+                    }, [[], 0, 0]);
+                    const neighborsAverage = (neighborsTotal/constraints.length);
+                    if (lessThanNeighbors.length > 0) {
+                        const lessThanNeighborsAverage = (lessThanNeighborsTotal/lessThanNeighbors.length);
+                        const differential = energy - lessThanNeighborsAverage;
+                        if (differential > 0) {
+                            const totalDifferential = differential * lessThanNeighbors.length;
+                            lessThanNeighbors.forEach(neighbor => {
+                                const { data: { energy: neighborEnergy } } = neighbor;
+                                const neighborDifferentialShare = (energy - neighborEnergy)/totalDifferential;
+                                const transferAmount = energyDiffusionRate * neighborDifferentialShare * differential;
+                                // Makesure they haven't been killed in the mean time
+                                if (neighbor.data.changeEnergy && n.data.changeEnergy) {
+                                    neighbor.data.changeEnergy(transferAmount);
+                                    n.data.changeEnergy(-1 * transferAmount);
+                                }
+                            });
+                        }
+                    }
+                }
                 drawBall && drawBall({ ball: n });
             }
         } else if (label === 'wall') {
@@ -201,28 +246,6 @@ const setup = ({ sessionId, beforeKillBall } = {}) => {
                         if (random() < aSelfStickiness || random() < bSelfStickiness) {
                             stickTogether(bodyA, bodyB);
                         }
-                        const [ ballWithMoreEnergy, ballWithLessEnergy ] =
-                            (aEnergy >= bEnergy) ? [bodyA, bodyB] : [bodyB, bodyA];
-                        const {
-                            genome: { energyToTransfer },
-                            data: { energy: moreEnergyAmount }
-                        } = ballWithMoreEnergy;
-                        const { data: { energy: lessEnergyAmount } } = ballWithLessEnergy;
-                        const positiveTransfer = (energyToTransfer > 0);
-                        if (positiveTransfer) {
-                            const transferAmount =
-                                (moreEnergyAmount > energyToTransfer) ?
-                                    energyToTransfer : moreEnergyAmount;
-                            ballWithLessEnergy.data.changeEnergy(transferAmount);
-                            ballWithMoreEnergy.data.changeEnergy(-1 * transferAmount);
-                        } else {
-                            const absoluteEnergyToTransfer = Math.abs(energyToTransfer);
-                            const transferAmount =
-                                (lessEnergyAmount > absoluteEnergyToTransfer) ?
-                                    absoluteEnergyToTransfer : lessEnergyAmount;
-                            ballWithLessEnergy.data.changeEnergy(-1 * transferAmount);
-                            ballWithMoreEnergy.data.changeEnergy(transferAmount);
-                        }
                     } else {
                         if (random() < aStickinessToOthers || random() < bStickinessToOthers) {
                             stickTogether(bodyA, bodyB);
@@ -274,6 +297,11 @@ const setup = ({ sessionId, beforeKillBall } = {}) => {
     };
 }
 
+function getOtherEndOfConstraint(constraint, me) {
+    const { bodyA, bodyB } = constraint;
+    return (bodyA.id === me.id) ? bodyB : bodyA;
+}
+
 function addBody(body) {
     World.add(engine.world, body);
 }
@@ -281,7 +309,11 @@ function addBody(body) {
 function removeBodyConstraints(body) {
     if (body.constraints) {
         body.constraints.forEach(constraint => {
-            if (constraint) World.remove(engine.world, constraint);
+            if (constraint) {
+                const neighbor = getOtherEndOfConstraint(constraint, body);
+                neighbor.neighborIds.delete(body.id);
+                World.remove(engine.world, constraint);
+            }
         });
         body.constraints = undefined;
     }
@@ -299,16 +331,22 @@ function removeBody(body) {
 }
 
 function stickTogether(ballA, ballB) {
-    const bond = Constraint.create({
-        bodyA: ballA, bodyB: ballB,
-        stiffness: 0.15,
-        length: ballA.circleRadius + 2,
-        damping: 0.75
-    });
-    if (ballA.constraints !== undefined && ballB.constraints !== undefined) {
-        ballA.constraints.push(bond);
-        ballB.constraints.push(bond);
-        World.add(engine.world, bond);
+    if( !ballA.neighborIds.has(ballB.id) ) {
+        const bond = Constraint.create({
+            bodyA: ballA, bodyB: ballB,
+            stiffness: 0.15,
+            length: ballA.circleRadius + 2,
+            damping: 0.75
+        });
+        // Incase one of the balls is currently being eaten
+        if (ballA.constraints !== undefined && ballB.constraints !== undefined) {
+            ballA.constraints.push(bond);
+            ballB.constraints.push(bond);
+            World.add(engine.world, bond);
+            ballA.neighborIds.add(ballB.id);
+            if (ballB.neighborIds.has(ballA.id)) console.log('WTF!');
+            ballB.neighborIds.add(ballA.id);
+        }
     }
 }
 
@@ -373,11 +411,15 @@ function spawnBall(parent, { xOveride, yOveride, paidInSize, isAnchorBaby } = {}
             genome,
             constraints: [],
             anchorConstraints: [],
+            neighborIds: new Set(),
             data: getNewBeingData({
                 parent,
                 now: getTime(),
                 beginTime,
-                initial: { energy: 0 }
+                initial: {
+                    energy: 0,
+                    wasAnchorBaby: isAnchorBaby?1:0
+                }
             }),
         }
     });

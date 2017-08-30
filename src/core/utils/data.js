@@ -26,7 +26,13 @@ function _calculateDataFields(dataDefinitions, ball, contextualData) {
 };
 
 function _getDataColumns(dataDefinitions, ballData) {
-    return map(dataDefinitions, (dataDefinition, key) => +(ballData[key] && ballData[key].toFixed?ballData[key].toFixed(4):ballData[key]));
+    return map(dataDefinitions, (dataDefinition, key) => {
+        const data = ballData[key];
+        if ((data || data === 0) && data.toFixed) {
+            return +(data.toFixed(4));
+        }
+        return data;
+    });
 };
 
 export function Data(dataDefinitions, dataFunctions) {

@@ -32,8 +32,20 @@ function _getGenomeColumns(genomeDefinition, genome) {
     let genomeColumns = [];
     let mutationRateColumns = [];
     forEach(genomeDefinition, (geneDefintion, key) => {
-        genomeColumns.push(+(genome[key].toFixed?genome[key].toFixed(4):genome[key]));
-        if (geneDefintion.mutates && !get(geneDefintion, 'mutates.dontLog')) +(mutationRateColumns.push(genome.mutationRates[key].toFixed?genome.mutationRates[key].toFixed(4):genome.mutationRates[key]));
+        const data = genome[key];
+        if ((data || data === 0) && data.toFixed) {
+            genomeColumns.push(+(data.toFixed(4)));
+        } else {
+            genomeColumns.push(data);
+        }
+        if (geneDefintion.mutates && !get(geneDefintion, 'mutates.dontLog')) {
+            const data = genome.mutationRates[key];
+            if ((data || data === 0) && data.toFixed) {
+                mutationRateColumns.push(+(data.toFixed(4)));
+            } else {
+                mutationRateColumns.push(data);
+            }
+        }
     });
     return genomeColumns.concat(mutationRateColumns);
 };
